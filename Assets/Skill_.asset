@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cec8ea7b79b161f4dae257383e747358, type: 3}
+  m_Name: Skill_
+  m_EditorClassIdentifier: 
+  _skillId: 
+  _apCost: 0
+  _damageCoeffi: 0
+  _fixedDamage: 0
+  _healingCoeffi: 0
+  _fixedHealing: 0
+  _shieldCoeffi: 0
+  _fixedShield: 0
+  _breakAmount: 0
+  _direction: 0
+  _targetRule: 0
+  _effectIds: []
+  _cleansesNormalStatus: 0
+  _isUnavoidable: 0
