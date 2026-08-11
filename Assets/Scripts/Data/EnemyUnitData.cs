@@ -19,8 +19,8 @@ public sealed class EnemyUnitData : ScriptableObject
 
     public string EnemyId => _enemyId;
     public bool IsBoss => _isBoss;
-    public int MaxBreakGuage => _maxBreakGauge;
-    public int MaxCrackGuage => _maxCrackGauge;
+    public int MaxBreakGauge => _maxBreakGauge;
+    public int MaxCrackGauge => _maxCrackGauge;
     public IReadOnlyList<string> SkillIds => _skillIds;
     public IReadOnlyList<string> StatusImmunityIds => _statusImmunityIds;
     public string BehaviorPatternId => _behaviorPatternId;
