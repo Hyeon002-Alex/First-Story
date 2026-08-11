@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 // 적 intent 일괄 보관, 공개. 상태 있음 -> 인스턴스 클래스. APSystem과 반대
 // 유닛에 intent를 실음: 대응단계, UI가 살아있는 모든 적 intent를 한 곳에서 순회하려고
@@ -12,8 +13,14 @@ public sealed class IntentSystem
 
     // === 등록, 소거 === //
     // 적 intent 등록. 같은 적 재등록 시 덮어씀
+    // null 가드: null 저장 시 미등록과 null 등록이 GetIntent에서 구분 불가
     public void SetIntent(EnemyUnit enemy, EnemyIntent intent)
     {
+        if (enemy == null)
+            throw new ArgumentNullException(nameof(enemy));
+        if (intent == null)
+            throw new ArgumentNullException(nameof(intent));
+
         _intents[enemy] = intent;
     }
 
@@ -30,6 +37,7 @@ public sealed class IntentSystem
         =>_intents.TryGetValue(enemy, out EnemyIntent intent) ? intent : null;
 
     // 대응단계, UI가 살아있는 모든 적 intent를 훑는 통로. 읽기 전용 노출
+    // Dictionary 열거 순서 비보장 -> 순서 의존 결정 금지. 순서 필요 시 _enemies 슬롯 인덱스로 정렬
     public IReadOnlyDictionary<EnemyUnit, EnemyIntent> AllIntents => _intents;
 
     // === 정보확인 플래그 === //

@@ -174,11 +174,15 @@ public sealed class BattleFlowSystem
         return true;
     }
     // 행위자 -> 이번 차례 명령서. 적 = intent 반환, 아군 = 입력 미구현
+    // 적 분기의 intent 비null은 IsStillValid 선행 통과에 의존하는 숨은 선행조검
+    // -> 순서 뒤바뀜 대비 재확인. null이면 명령서 없음 처리
     private ActionCommand BuildCommand(BattleUnit actor)
     {
         if (actor is EnemyUnit enemy)
         {
             EnemyIntent intent = _intentSystem.GetIntent(enemy);
+            if(intent == null)
+                return null;    // IsStillValid가 이미 걸러야 정상. 순서 역전 대비 방어
             return ActionCommand.CreateSkill(enemy, intent.Skill, intent.Target);
         }
         if (actor is AllyUnit ally)

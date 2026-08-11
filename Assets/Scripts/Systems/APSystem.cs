@@ -5,8 +5,8 @@ using System.Collections.Generic;
 // 값은 AllyUnit._currAP에, 계산, 판단은 이 시스템에
 public static class APSystem
 {
-    private const int _apGainPerTurn = 2;   // 턴당 회복량
-    private const int _maxAP = 6;           // AP 상한
+    private static readonly int _apGainPerTurn = 2;   // 턴당 회복량
+    private static readonly int _maxAP = 6;           // AP 상한
 
     // 턴 시작 AP 회복
     // 전투 불능 아군 스킵. 생존 판정을 이 시스템 한 곳에 둠
@@ -26,5 +26,12 @@ public static class APSystem
     public static bool CanAfford(AllyUnit ally, int cost) => ally.CurrAP >= cost;
 
     // 행동 확정 시점 1회 소모. SetAP의 0 하한이 음수 방지
-    public static void Consume(AllyUnit ally, int cost) => ally.SetAP(ally.CurrAP - cost);
+    // 음수 코스트 차단. 음수면 회복 방향이라 상한6 우회 경로가 됨
+    public static void Consume(AllyUnit ally, int cost)
+    {
+        if (cost < 0)
+            throw new ArgumentOutOfRangeException(nameof(cost), "소모 비용은 음수 불가");
+
+        ally.SetAP(ally.CurrAP - cost);
+    }
 }
