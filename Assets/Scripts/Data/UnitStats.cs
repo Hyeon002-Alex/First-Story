@@ -2,8 +2,9 @@
 using UnityEngine;
 
 // 기본 스탯 4종. 정적 불변 값. 유닛 데이터 안에 박혀 인스펙터에 인라인으로 뜸
+// 값 복사로 공유 뮤테이션 차단
 [Serializable]
-public sealed class UnitStats
+public struct UnitStats
 {
     [SerializeField] private int _maxHP;
     [SerializeField] private int _attack;

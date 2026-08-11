@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fd56ceb0353e5d64a9b35b710c2401e5, type: 3}
   m_Name: Enemy_
   m_EditorClassIdentifier: 
-  _enemyId: 
+  _enemyId: Enemy
   _isBoss: 0
   _maxBreakGauge: 0
   _maxCrackGauge: 0
@@ -20,7 +20,7 @@ MonoBehaviour:
   _statusImmunityIds: []
   _behaviorPatternId: 
   _baseStats:
-    _maxHP: 0
-    _attack: 0
-    _defense: 0
-    _speed: 0
+    _maxHP: 100
+    _attack: 40
+    _defense: 10
+    _speed: 3

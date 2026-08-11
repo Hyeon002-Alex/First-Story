@@ -1,0 +1,5 @@
+﻿{
+	"name": "Laplace.Systems",
+	"references": ["Laplace.Core", "Laplace.Data"],
+	"autoReferenced": true
+}

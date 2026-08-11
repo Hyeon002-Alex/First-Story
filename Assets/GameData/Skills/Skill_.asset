@@ -13,15 +13,15 @@ MonoBehaviour:
   m_Name: Skill_
   m_EditorClassIdentifier: 
   _skillId: 
-  _apCost: 0
-  _damageCoeffi: 0
+  _apCost: 3
+  _damageCoeffi: 1
   _fixedDamage: 0
   _healingCoeffi: 0
   _fixedHealing: 0
   _shieldCoeffi: 0
   _fixedShield: 0
   _breakAmount: 0
-  _direction: 0
+  _direction: 1
   _targetRule: 0
   _effectIds: []
   _cleansesNormalStatus: 0

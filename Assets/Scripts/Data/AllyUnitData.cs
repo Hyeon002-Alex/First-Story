@@ -8,8 +8,8 @@ public sealed class AllyUnitData : ScriptableObject
     [SerializeField] private string _unitId;
 
     [SerializeField] private string _uniqueActionId;            // 고유 행동 Id
-    [SerializeField] private List<string> _availableSkillIds;   // 획득 가능 스킬 Id
-    [SerializeField] private List<string> _equippedSkillIds;    // 장착 스킬. 정확히 3개
+    [SerializeField] private List<string> _availableSkillIds = new List<string>();   // 획득 가능 스킬 Id
+    [SerializeField] private List<string> _equippedSkillIds = new List<string>();    // 장착 스킬. 정확히 3개
     [SerializeField] private UnitStats _baseStats;              // 인라인으로 인스펙터에 뜸
 
     public string UnitId => _unitId;

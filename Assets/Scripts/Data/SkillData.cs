@@ -24,7 +24,7 @@ public sealed class SkillData : ScriptableObject
     [SerializeField] private TargetRule _targetRule;
 
     // 부가 효과
-    [SerializeField] private List<string> _effectIds;   // 부여할 상태이상 Id. 순수 참조
+    [SerializeField] private List<string> _effectIds = new List<string>();   // 부여할 상태이상 Id. 순수 참조
     [SerializeField] private bool _cleansesNormalStatus;    // 일반 상태이상 정화 여부. 부여의 반대 동작
 
     // 정보 확인 속성

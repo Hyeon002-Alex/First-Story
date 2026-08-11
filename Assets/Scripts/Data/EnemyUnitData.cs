@@ -12,8 +12,8 @@ public sealed class EnemyUnitData : ScriptableObject
     [SerializeField] private int _maxBreakGauge;
     [SerializeField] private int _maxCrackGauge;
 
-    [SerializeField] private List<string> _skillIds;
-    [SerializeField] private List<string> _statusImmunityIds;
+    [SerializeField] private List<string> _skillIds = new List<string>();
+    [SerializeField] private List<string> _statusImmunityIds = new List<string>();
     [SerializeField] private string _behaviorPatternId;
     [SerializeField] private UnitStats _baseStats;
 
