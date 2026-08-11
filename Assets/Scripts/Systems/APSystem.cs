@@ -1,0 +1,30 @@
+﻿using System;
+using System.Collections.Generic;
+
+// AP 시스템. 상태 없음, 아군 유닛에 규칙만 적용
+// 값은 AllyUnit._currAP에, 계산, 판단은 이 시스템에
+public static class APSystem
+{
+    private const int _apGainPerTurn = 2;   // 턴당 회복량
+    private const int _maxAP = 6;           // AP 상한
+
+    // 턴 시작 AP 회복
+    // 전투 불능 아군 스킵. 생존 판정을 이 시스템 한 곳에 둠
+    public static void RecoverAll(IReadOnlyList<AllyUnit> allies)
+    {
+        foreach (AllyUnit ally in allies)
+        {
+            if (ally.IsIncapacitated)
+                continue;
+
+            int recovered = Math.Min(ally.CurrAP + _apGainPerTurn, _maxAP);
+            ally.SetAP(recovered);
+        }
+    }
+
+    // AP 충분 여부만 답함. 실제 차단은 호출자, 행동 선택 쪽
+    public static bool CanAfford(AllyUnit ally, int cost) => ally.CurrAP >= cost;
+
+    // 행동 확정 시점 1회 소모. SetAP의 0 하한이 음수 방지
+    public static void Consume(AllyUnit ally, int cost) => ally.SetAP(ally.CurrAP - cost);
+}
