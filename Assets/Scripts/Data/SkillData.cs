@@ -32,11 +32,11 @@ public sealed class SkillData : ScriptableObject
 
     public string SkillId => _skillId;
     public int ApCost => _apCost;
-    public float DamageCoefficient => _damageCoeffi;
+    public float DamageCoeffi => _damageCoeffi;
     public int FixedDamage => _fixedDamage;
-    public float HealingCoefficient => _healingCoeffi;
+    public float HealingCoeffi => _healingCoeffi;
     public int FixedHealing => _fixedHealing;
-    public float ShieldCoefficient => _shieldCoeffi;
+    public float ShieldCoeffi => _shieldCoeffi;
     public int FixedShield => _fixedShield;
     public int BreakAmount => _breakAmount;
     public AttackDirection Direction => _direction;
