@@ -9,7 +9,7 @@ public static class CombatCalculator
     // 피해 사슬: 기본피해 * 방어보정 * 방어계수 * 붕괴 -> 소수점 버림, 최소 1
     // directionMod, breakMod = 밖에서 판정한 배율. 보정 없으면 1.0f 주입
     public static DamageResult CalcDamage(
-        int attack, int damageCoeffi, int fixedDamage,
+        int attack, float damageCoeffi, int fixedDamage,
         int defense, float directionMod, float breakMod)
     {
         double basePower = attack * (double)damageCoeffi + fixedDamage;         // 공격력, 계수, 고정피해
@@ -21,7 +21,7 @@ public static class CombatCalculator
     }
 
     // 회복: 방어, 방향, 붕괴 무보정. 받는회복량 보정만 밖에서 주임
-    public static int CalcHealing(int attack, int healingCoeffi, int fixedHealing, float receivedHealingMod)
+    public static int CalcHealing(int attack, float healingCoeffi, int fixedHealing, float receivedHealingMod)
     { 
         double raw = (attack * (double)healingCoeffi + fixedHealing) * receivedHealingMod;
         return Math.Max(0, FloorToInt(raw));

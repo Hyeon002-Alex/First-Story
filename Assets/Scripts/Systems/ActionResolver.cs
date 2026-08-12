@@ -1,0 +1,130 @@
+﻿using System;
+using System.Collections.Generic;
+using UnityEngine;
+
+// 한 행동 실행 파이프 소유, 조율. IActionExecutor 구현
+// 계산/반정/젹옹은 전부 하위 시스템 위임
+public sealed class ActionResolver : IActionExecutor
+{
+    private readonly IReadOnlyList<AllyUnit> _allies;
+    private readonly IReadOnlyList<EnemyUnit> enemies;
+
+    public ActionResolver(IReadOnlyList<AllyUnit> allies, IReadOnlyList<EnemyUnit> enemies)
+    {
+        _allies = allies ?? throw new ArgumentNullException(nameof(allies));
+        this.enemies = enemies ?? throw new ArgumentNullException(nameof(enemies));
+    }
+
+    // === IActionExecutor: BattleFlowSystem 7단계가 각 행위자 차례에 호출 === //
+    public void Execute(ActionCommand command)
+    {
+        if (command == null)
+            throw new ArgumentNullException(nameof(command));
+
+        // 스킬 없는 명령서: 차례종료. 대응행동은 턴루프 5~6단계 소유라 원칙상 여기 없음
+        if (command.Skill == null)
+        {
+            Debug.Log($"[실행] {Name(command.Actor)} {command.Kind} (스킬 없음 -> 파이프 미실행");
+            return;
+        }
+
+        // 1~4. 대상 ㄱㄹ정
+        TargetingResult targeting = TargetingSystem.Resolve(command, _allies, enemies);
+        if (targeting.TargetLost)
+        {
+            Debug.Log($"[실행] {Name(command.Actor)} {command.Skill.SkillId} -> 대상 상실, 행동 취소");
+            return;
+        }
+
+
+        Debug.Log($"[실행] {Name(command.Actor)} {command.Skill.SkillId} (대상 {targeting.Targets.Count}명)");
+
+        // 대상별 루프: 범위면 각 대상마다 5~12
+        foreach (BattleUnit target in targeting.Targets)
+        {
+            ResolvePerTarget(command.Actor, target, command.Skill);
+        }
+    }
+
+    // 대상 1명 5~12 스텝
+    private void ResolvePerTarget(BattleUnit actor, BattleUnit target, SkillData skill)
+    {
+        // 5. 회피 판정: 미구현. 우선 회피 없음을 가정
+
+        int attack = actor.EffectiveAttack;
+
+        // --- 피해. 방어/방향/붕괴 보정 있음 --- //
+        if (HasDamage(skill))
+        {
+            // 6~7. 방향 배율 판정 + 계산
+            DamageResult dmg = ComputeDamage(actor, target, skill);
+
+            // 8. 적용: 보호막 흡수 -> HP
+            DamageApplication applied = DamageSystem.Apply(target, dmg.FinalDamage);
+            Debug.Log($"  {Name(target)} 피해 {dmg.FinalDamage} (흡수 {applied.ShieldAbsorbed}/HP {applied.HPLost})" +
+                $" [dir {dmg.DirectionMod} brk {dmg.BreakMod}] HP {target.CurrHP}/{target.MaxHP}");
+
+            // 9. 사망판정. 감지 로그만
+            if (target.CurrHP == 0)
+                Debug.Log($"  {Name(target)} HP 0");
+
+            // 10~11. 생존 시 붕괴/균열 누적, 발생
+        }
+
+        // --- 회복 --- //
+        if (HasHealing(skill))
+        {
+            // 회복 계수 변동은 미구현
+
+            int heal = CombatCalculator.CalcHealing(attack, skill.HealingCoeffi, skill.FixedHealing, 1.00f);
+            HealingSystem.Apply(target, heal);
+            Debug.Log($"  {Name(target)} 회복 {heal} -> HP {target.CurrHP}/{target.MaxHP}");
+        }
+
+        // --- 보호막 --- //
+        if (HasShield(skill))
+        {
+            int shield = CombatCalculator.CalcShield(attack, skill.ShieldCoeffi, skill.FixedShield);
+            ShieldSystem.Grant(target, shield);
+            Debug.Log($"  {Name(target)} 보호막 +{shield} -> 총 {target.Shield}");
+        }
+
+        // 12. 상태이상 적용: 미구현. skill.EffectIds -> StatusEffectSystem. 회피 시 5에서 함께 무효
+    }
+
+    // === 피해 계산 단일 경로 === //
+    // 미리보기와 실제가 똑같이 이걸 호출
+    private DamageResult ComputeDamage(BattleUnit actor, BattleUnit target, SkillData skill)
+    {
+        // 6. 방향 배율: 자세 없음 -> None -> 1.00
+        float diectionMod = DirectionSystem.GetMod(skill.Direction, DefenseStance.None);
+        // 붕괴 받는 피해 증가: 미구현 -> 1.00
+        float breakMod = 1.00f;
+
+        // 7. 계산
+        return CombatCalculator.CalcDamage(
+            actor.EffectiveAttack, skill.DamageCoeffi, skill.FixedDamage,
+            target.EffectiveDefense, diectionMod, breakMod);
+    }
+
+    // 미리보기: 실제와 동일 계산. 적용만 안함. UI 예상피해 표시가 이걸 호출
+    public DamageResult PreviewDamage(BattleUnit actor, BattleUnit target, SkillData skill)
+    {
+        if (actor == null) 
+            throw new ArgumentNullException(nameof(actor));
+        if (target == null) 
+            throw new ArgumentNullException(nameof(target));
+        if (skill == null) 
+            throw new ArgumentNullException(nameof(skill));
+
+        return ComputeDamage(actor, target, skill);
+    }
+
+    // === wide SkillData 효과 유무(구조 부채: 한 스킬이 피해/회복/보호막 복수 보유 가능) === //
+    private static bool HasDamage(SkillData s) => s.DamageCoeffi != 0f || s.FixedDamage != 0;
+    private static bool HasHealing(SkillData s) => s.HealingCoeffi != 0f || s.FixedDamage != 0;
+    private static bool HasShield(SkillData s) => s.ShieldCoeffi != 0f || s.FixedShield != 0;
+
+    private static string Name(BattleUnit u)
+        => u is AllyUnit a ? a.UnitId : (u is EnemyUnit e ? e.EnemyId : "?");
+}

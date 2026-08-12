@@ -2,12 +2,12 @@
 // 흡수 계산은 DamageSystem 한 곳에만 존재
 public readonly struct DamageApplication
 {
-    public int ShieldAborbed { get; }
+    public int ShieldAbsorbed { get; }
     public int HPLost { get; }
 
-    public DamageApplication(int shieldAborbed, int hpLost)
-    { 
-        ShieldAborbed = shieldAborbed;
+    public DamageApplication(int shieldAbsorbed, int hpLost)
+    {
+        ShieldAbsorbed = shieldAbsorbed;
         HPLost = hpLost;
     }
 }

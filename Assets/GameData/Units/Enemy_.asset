@@ -16,7 +16,8 @@ MonoBehaviour:
   _isBoss: 0
   _maxBreakGauge: 0
   _maxCrackGauge: 0
-  _skillIds: []
+  _skillIds:
+  - Skill_
   _statusImmunityIds: []
   _behaviorPatternId: 
   _baseStats:
