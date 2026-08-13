@@ -21,6 +21,8 @@ public abstract class BattleUnit
     public bool ActedThisTurn => _actedThisTurn;
     public float DamageTakenMod => _runtime.DamageTakenMod;
     public int DamageTakenModExpireTurn => _runtime.DamageTakenModExpireTurn;
+    public AttackDirection DefenseDirection => _runtime.DefenseDirection;
+    public AttackDirection WeaknessDirection => _runtime.WeaknessDirection;
 
     // === 읽기: 유효 스탯. 단일 경로, 기본 + 보정, 보정 = 일시강화 - 상태 파생, 지금은 0 === //
     public int EffectiveAttack => Clamp0(_baseStats.Attack + AttackModifier);
@@ -32,6 +34,20 @@ public abstract class BattleUnit
     private int DefenseModifier => 0;
     private int SpeedModifier => 0;
 
+    // 능동(아군)/패시브(적) 구분. 방어 불일치 배율(0.75/1.00) 선택용. 자식이 결정
+    protected abstract bool StanceIsActive { get; }
+
+    // 방어방향, 약점바향 -> DefenseStance 조립. 둘 다 None이면 자세 없음
+    public DefenseStance GetDefenseStance()
+    { 
+        AttackDirection def = _runtime.DefenseDirection;
+        AttackDirection weak = _runtime.WeaknessDirection;
+        if(def == AttackDirection.None && weak == AttackDirection.None)
+            return DefenseStance.None;
+
+        return new DefenseStance(def, weak, StanceIsActive);
+    }
+
     // === 저수준 쓰기 통로. RuntimeStats 위임. 자기 플래그 === //
     public void ModifyHP(int value) => _runtime.ModifyHP(value);
     public void SetShield(int value) => _runtime.SetShield(value);
@@ -40,6 +56,9 @@ public abstract class BattleUnit
     public void SetActed(bool value) => _actedThisTurn = value;
     public void SetDamageTakenMod(float mod, int expireTurn)
         => _runtime.SetDamageTakenMod(mod, expireTurn);
+    public void SetStance(AttackDirection defenseDir, AttackDirection weaknessDir)
+        => _runtime.SetStance(defenseDir, weaknessDir);
+    public void ClearStance() => _runtime.ClearStance();
 
     // 유효 스탯 하한 0
     private static int Clamp0(int v) => v < 0 ? 0 : v;

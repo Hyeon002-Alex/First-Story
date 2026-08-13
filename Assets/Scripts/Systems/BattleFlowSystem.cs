@@ -95,9 +95,11 @@ public sealed class BattleFlowSystem
     // 5. 정보 대응
     private void Step5_InfoResponse()
         => Debug.Log("[5 정보대응] 미구현");
-    // 6. 방어 대응
+
+    // 6. 방어 대응. 보호 = _protection.SetProtect / 방향방어 = _ally.SetStance(방향, None)
+    // 아군 입력 UI 미구현 -> 실제 선언 소스 없음. 소수 도착 시 여기서 배선
     private void Step6_DefenseResponse()
-        => Debug.Log("[6 방어대응] 미구현");
+        => Debug.Log("[6 방어대응] 미구현(보호, 방향방어 배선 대기");
 
     // 7. 속도순 실행. 정렬 1회 + 순서고정, 유효성 재검사 스킵
     private void Step7_ExecuteBySpeed()
@@ -126,7 +128,7 @@ public sealed class BattleFlowSystem
         }
     }
 
-    // 8. 턴종료. 보호 소거. 받는피해증가 만료. 상태이상 만료는 미구현
+    // 8. 턴종료. 보호 소거. 받는피해증가/방향방어 만료. 상태이상 만료는 미구현
     private void Step8_TurnEnd()
     {
         _protection.ClearAll();
@@ -134,8 +136,13 @@ public sealed class BattleFlowSystem
         { 
             BreakCrackSystem.ExpireDamageMod(e, _turnNum);
         }
+        // 아군 방향방어 = 한 턴 한정. 적 패시브 자세는 스킬 지속이라 zlear 대상 아님
+        foreach (AllyUnit a in _allies)
+        { 
+            a.ClearStance();
+        }
        
-        Debug.Log("[8 턴종료] 보호 소거 + 받는피해증가 만료. 나머지 구멍(묶음3");
+        Debug.Log("[8 턴종료] 보호 소거 + 받는피해증가/방향방어 만료. 나머지 구멍(묶음3");
     }
 
     // 9. 판정. 미구현: 전멸, 승리, 웨이브 전환

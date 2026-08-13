@@ -121,10 +121,10 @@ public sealed class ActionResolver : IActionExecutor
     // 미리보기와 실제가 똑같이 이걸 호출
     private DamageResult ComputeDamage(BattleUnit actor, BattleUnit target, SkillData skill)
     {
-        // 6. 방향 배율: 자세 없음 -> None -> 1.00
-        float diectionMod = DirectionSystem.GetMod(skill.Direction, DefenseStance.None);
-        // 붕괴 받는 피해 증가: 미구현 -> 1.00
-        float breakMod = 1.00f;
+        // 6. 방향 배율: 대상의 실제 방어 자세 조회. 자세 없으면 None -> 1.00
+        float diectionMod = DirectionSystem.GetMod(skill.Direction, target.GetDefenseStance());
+        // 붕괴 받는 피해 증가: 대상이 이미 붕괴/균열 상태면 1.50
+        float breakMod = BreakCrackSystem.GetDamageMod(target);
 
         // 7. 계산
         return CombatCalculator.CalcDamage(

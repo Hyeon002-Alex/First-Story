@@ -18,6 +18,9 @@ public sealed class AllyUnit : BattleUnit
     public string DisplayName => _data.DisplayName;
     public IReadOnlyList<SkillData> EquippedSkills => _data.EquippedSkills;
 
+    // 아군 방향방어 = 능동. 불일치 시 0.75 보상
+    protected override bool StanceIsActive => true;
+
     // AP 통로: 음수만 방지, 회복량, 소모, 판정은 APSystem 소유
     public void SetAP(int value) => _currAP = Math.Max(0, value);
 }

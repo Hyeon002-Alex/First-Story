@@ -22,6 +22,9 @@ public sealed class EnemyUnit : BattleUnit
     public IReadOnlyList<SkillData> Skills => _data.Skills;
     public string BehaviorPatternID => _data.BehaviorPatternId;
 
+    // 적 자세 = 패시브. 불일치 시 1.00 무보상. 자세 부여 스킬은 v0.1.0 미사용
+    protected override bool StanceIsActive => false;
+
     // 게이지 통로: 음수만 방지. 누적량, 발생조건, 초기화는 Break/CrackSystem 소유
     public void SetGauge(int value) => _currBreakOrCrackGauge = Math.Max(0, value);
 }
