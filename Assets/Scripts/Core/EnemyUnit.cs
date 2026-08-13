@@ -15,6 +15,8 @@ public sealed class EnemyUnit : BattleUnit
 
     public int CurrBreakOrCrackGauge => _currBreakOrCrackGauge;
     public bool IsBoss => _data.IsBoss;
+    public int MaxBreakGauge => _data.MaxBreakGauge;    // 일반, 정예 붕괴 임계
+    public int MaxCrackGauge => _data.MaxCrackGauge;    // 보스 균열 임계
     public string EnemyId => _data.EnemyId;
     public string DisplayName => _data.DisplayName;
     public IReadOnlyList<SkillData> Skills => _data.Skills;

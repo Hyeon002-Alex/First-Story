@@ -11,7 +11,8 @@ public static class TargetingSystem
     public static TargetingResult Resolve(
         ActionCommand command,
         IReadOnlyList<AllyUnit> allies,
-        IReadOnlyList<EnemyUnit> enemies)
+        IReadOnlyList<EnemyUnit> enemies,
+        ProtectionSystem protection)
     { 
         if(command == null)
             throw new ArgumentNullException(nameof(command));
@@ -42,13 +43,22 @@ public static class TargetingSystem
         }
 
         // Single / FixedTarget
+        BattleUnit finalTarget = designated;
+
         // 2. 고정대상 확인: FixedTarget이면 3 건너뜀
         // 3. 보호 리다이렉트: rule == Single일 때만 ProtectionSystem.GetProtector로 대상 교체
+        if (rule == TargetRule.Single)
+        {
+            BattleUnit protector = protection.GetProtector(designated);
+            if(protector != null && !protector.IsIncapacitated)
+                finalTarget = protector;
+        }
+
         // 4. 최종 대상 생존 확인. 죽었으면 대상 상실
-        if (designated == null || designated.IsIncapacitated)
+        if (finalTarget == null || finalTarget.IsIncapacitated)
             return new TargetingResult(new List<BattleUnit>(), true);
 
-        return new TargetingResult(new List<BattleUnit> { designated }, false);
+        return new TargetingResult(new List<BattleUnit> { finalTarget }, false);
     }
 
     // 대표 대상과 같은 진영의 생존 유닛 전체. 명단 슬롯 순서 유지 = 결정론

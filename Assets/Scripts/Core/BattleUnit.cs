@@ -4,6 +4,7 @@ public abstract class BattleUnit
     protected readonly UnitStats _baseStats;    // 정적 기본 스탯 참조. 자식 _data에서 넘어옴
     protected readonly RuntimeStats _runtime;   // 런타임 상태 묶음
     private bool _isIncapacitated;
+    private bool _actedThisTurn;                // 이번 글로벌 턴 행동 완료. 붕괴 행동취소 판정 + 7단계 재검사
 
     protected BattleUnit(UnitStats baseStats)
     { 
@@ -17,6 +18,9 @@ public abstract class BattleUnit
     public int Shield => _runtime.Shield;
     public int EvasionCount => _runtime.EvasionCount;
     public bool IsIncapacitated => _isIncapacitated;
+    public bool ActedThisTurn => _actedThisTurn;
+    public float DamageTakenMod => _runtime.DamageTakenMod;
+    public int DamageTakenModExpireTurn => _runtime.DamageTakenModExpireTurn;
 
     // === 읽기: 유효 스탯. 단일 경로, 기본 + 보정, 보정 = 일시강화 - 상태 파생, 지금은 0 === //
     public int EffectiveAttack => Clamp0(_baseStats.Attack + AttackModifier);
@@ -33,6 +37,9 @@ public abstract class BattleUnit
     public void SetShield(int value) => _runtime.SetShield(value);
     public void SetEvasion(int value) => _runtime.SetEvasion(value);
     public void SetIncapacitated(bool value) => _isIncapacitated = value;
+    public void SetActed(bool value) => _actedThisTurn = value;
+    public void SetDamageTakenMod(float mod, int expireTurn)
+        => _runtime.SetDamageTakenMod(mod, expireTurn);
 
     // 유효 스탯 하한 0
     private static int Clamp0(int v) => v < 0 ? 0 : v;

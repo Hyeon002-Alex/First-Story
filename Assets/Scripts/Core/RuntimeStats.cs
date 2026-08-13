@@ -9,6 +9,8 @@ public sealed class RuntimeStats
     
     private int _shield;        // 보호막량
     private int _evasionCount;  // 회피 횟수. 최대 3
+    private float _damageTakenMod;          // 받는 피해 증가 배율. 기본 1.00, 붕괴/균열 시 1.50
+    private int _damageTakenModExpireTurn;  // 만로 글로벌 턴. 비활성 시 0
 
     // 현재 HP를 최대 Hp에서 출발시킴. 보호막, 회피는 0
     public RuntimeStats(int maxHP)
@@ -17,11 +19,15 @@ public sealed class RuntimeStats
         _currHP = maxHP;
         _shield = 0;
         _evasionCount = 0;
+        _damageTakenMod = 1.00f;
+        _damageTakenModExpireTurn = 0;
     }
 
     public int CurrHP => _currHP;
     public int Shield => _shield;
     public int EvasionCount => _evasionCount;
+    public float DamageTakenMod => _damageTakenMod;
+    public int DamageTakenModExpireTurn => _damageTakenModExpireTurn;
 
     // 저수준 쓰기 통로. 최소 불변식만
     // HP 도메인 [0, maxHP] 클램프. value는 DamageSystem, HealingSystem이 계산
@@ -34,4 +40,11 @@ public sealed class RuntimeStats
     // shield, evasion = 음수만 방지. 상한은 각 시스템 소유
     public void SetShield(int value) => _shield = Math.Max(0, value);
     public void SetEvasion(int value) => _evasionCount = Math.Max(0, value);
+
+    // 받는 피해 증가 통로: 배율 음수 방지. 만료턴 규칙은 Break/CrackSystem 소유
+    public void SetDamageTakenMod(float mod, int expireTurn)
+    { 
+        _damageTakenMod = Math.Max(0f, mod);
+        _damageTakenModExpireTurn = expireTurn;
+    }
 }

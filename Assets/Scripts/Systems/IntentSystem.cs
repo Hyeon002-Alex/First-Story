@@ -7,9 +7,9 @@ public sealed class IntentSystem
 { 
     // 적별 의도. 참조 키로 조회
     private readonly Dictionary<EnemyUnit, EnemyIntent> _intents = new Dictionary<EnemyUnit, EnemyIntent>();
-
     // 정보 확인 플래그: intent와 분리 소유. intent는 불변으로 유지
     private readonly HashSet<EnemyUnit> _revealed = new HashSet<EnemyUnit>();
+    private readonly HashSet<EnemyUnit> _cancelled = new HashSet<EnemyUnit>();  // 붕괴 행동취소 표시
 
     // === 등록, 소거 === //
     // 적 intent 등록. 같은 적 재등록 시 덮어씀
@@ -29,6 +29,7 @@ public sealed class IntentSystem
     { 
         _intents.Clear();
         _revealed.Clear();
+        _cancelled.Clear();
     }
 
     // === 조회 === //
@@ -44,4 +45,15 @@ public sealed class IntentSystem
     public bool IsRevealed(EnemyUnit enemy) => _revealed.Contains(enemy);
     // 정보확인(Reveal) 실행 시 켬. 데이터는 안 바뀌고 공개 수준만 오름
     public void SetRevealed(EnemyUnit enemy) => _revealed.Add(enemy);
+
+    // === 붕괴 행동취소 === //
+    // intent 제거가 아닌 무효 표시. UI 취소 연출이 원본 intent를 읽어야 하므로 보존
+    public void Cancel(EnemyUnit enemy)
+    { 
+        if(enemy == null)
+            throw new ArgumentNullException(nameof(enemy));
+        _cancelled.Add(enemy);
+    }
+
+    public bool IsCancelled(EnemyUnit enemy) => _cancelled.Contains(enemy);
 }

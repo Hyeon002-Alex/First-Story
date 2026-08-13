@@ -10,7 +10,8 @@ public sealed class BattleFlowSystem
     private readonly IReadOnlyList<AllyUnit> _allies;
     private readonly IReadOnlyList<EnemyUnit> _enemies;
     private readonly IntentSystem _intentSystem;
-    private readonly IActionExecutor _executor;         // 실행 구멍
+    private readonly ProtectionSystem _protection;       // 6단계 선언, 8단계 소거. ActionResolver와 같은 인스턴스
+    private readonly IActionExecutor _executor;          // 실행 구멍
 
     private int _turnNum;
 
@@ -18,11 +19,13 @@ public sealed class BattleFlowSystem
         IReadOnlyList<AllyUnit> allies,
         IReadOnlyList<EnemyUnit> enemies,
         IntentSystem intentSystem,
+        ProtectionSystem protection,
         IActionExecutor executor)
     { 
         _allies = allies ?? throw new ArgumentNullException(nameof(allies));
         _enemies = enemies ?? throw new ArgumentNullException(nameof(enemies));
         _intentSystem = intentSystem ?? throw new ArgumentNullException(nameof(intentSystem));
+        _protection = protection ?? throw new ArgumentNullException(nameof(protection));
         _executor = executor ?? throw new ArgumentNullException(nameof(executor));
         _turnNum = 0;
     }
@@ -43,10 +46,14 @@ public sealed class BattleFlowSystem
         Step9_Judge();
     }
 
-    // 1. 턴 시작. 턴번호 증가
+    // 1. 턴 시작. 턴번호 증가 + 전원 행동완료 플래그 리셋
     private void Step1_TurnStart()
     { 
         _turnNum++;
+        foreach (BattleUnit u in AllUnits())
+        {
+            u.SetActed(false);
+        }
         Debug.Log($"===[턴 {_turnNum} 시작] ===");
     }
 
@@ -112,16 +119,24 @@ public sealed class BattleFlowSystem
             if (command == null)
                 continue;
 
-            // 실행 = 미구현
-            _executor.Execute(command);
+            _executor.Execute(command, _turnNum);
+            actor.SetActed(true);
 
             // 실행후 사망, 붕괴 반영은 다음 순번 재검사가 자동 처리
         }
     }
 
-    // 8. 턴종료. 미구현: 지속피해, 지속시간, 만료
+    // 8. 턴종료. 보호 소거. 받는피해증가 만료. 상태이상 만료는 미구현
     private void Step8_TurnEnd()
-        => Debug.Log("[8 턴종료] 구멍(묶음3)");
+    {
+        _protection.ClearAll();
+        foreach (EnemyUnit e in _enemies)
+        { 
+            BreakCrackSystem.ExpireDamageMod(e, _turnNum);
+        }
+       
+        Debug.Log("[8 턴종료] 보호 소거 + 받는피해증가 만료. 나머지 구멍(묶음3");
+    }
 
     // 9. 판정. 미구현: 전멸, 승리, 웨이브 전환
     private void Step9_Judge() 
@@ -153,6 +168,12 @@ public sealed class BattleFlowSystem
         }
         if (actor is EnemyUnit enemy)
         {
+            // 붕괴 행동취소: intent 무효 표시된 적은 스킵
+            if (_intentSystem.IsCancelled(enemy))
+            {
+                reason = "붕괴 행동취소";
+                return false;
+            }
             EnemyIntent intent = _intentSystem.GetIntent(enemy);
             if (intent == null)
             {
@@ -164,7 +185,6 @@ public sealed class BattleFlowSystem
                 reason = "대상 상실";
                 return false;
             }
-            // 붕괴 취소 판정. 미구현
         }
 
         reason = null;
@@ -185,6 +205,19 @@ public sealed class BattleFlowSystem
         if (actor is AllyUnit ally)
             return ActionCommand.CreateEndTurn(ally);   // 입력 대기. 미구현. 골격은 자동 차례종료
         return null;
+    }
+
+    // 전체 유닛. 스텝1 플래그 리셋용
+    private IEnumerable<BattleUnit> AllUnits()
+    {
+        foreach (AllyUnit a in _allies)
+        { 
+            yield return a;
+        }
+        foreach (EnemyUnit e in _enemies)
+        {
+            yield return e;
+        }
     }
 
     // === === //

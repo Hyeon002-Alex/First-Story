@@ -8,15 +8,24 @@ public sealed class ActionResolver : IActionExecutor
 {
     private readonly IReadOnlyList<AllyUnit> _allies;
     private readonly IReadOnlyList<EnemyUnit> enemies;
+    private readonly ProtectionSystem _protection;      // 대상 파이프 3스텝에서 읽음. BattleFlowSystem과 같은 인스턴스
+    private readonly IntentSystem _intentSystem;        // 붕괴취소
 
-    public ActionResolver(IReadOnlyList<AllyUnit> allies, IReadOnlyList<EnemyUnit> enemies)
+    public ActionResolver(
+        IReadOnlyList<AllyUnit> allies, 
+        IReadOnlyList<EnemyUnit> enemies, 
+        ProtectionSystem protection,
+        IntentSystem intentSystem)
     {
         _allies = allies ?? throw new ArgumentNullException(nameof(allies));
         this.enemies = enemies ?? throw new ArgumentNullException(nameof(enemies));
+        _protection = protection ?? throw new ArgumentNullException(nameof(protection));
+        _intentSystem = intentSystem ?? throw new ArgumentNullException(nameof(intentSystem));
     }
 
     // === IActionExecutor: BattleFlowSystem 7단계가 각 행위자 차례에 호출 === //
-    public void Execute(ActionCommand command)
+    // currentTurn = 붕괴 만료턴 기준
+    public void Execute(ActionCommand command, int currentTurn)
     {
         if (command == null)
             throw new ArgumentNullException(nameof(command));
@@ -28,8 +37,8 @@ public sealed class ActionResolver : IActionExecutor
             return;
         }
 
-        // 1~4. 대상 ㄱㄹ정
-        TargetingResult targeting = TargetingSystem.Resolve(command, _allies, enemies);
+        // 1~4. 대상 결정
+        TargetingResult targeting = TargetingSystem.Resolve(command, _allies, enemies, _protection);
         if (targeting.TargetLost)
         {
             Debug.Log($"[실행] {Name(command.Actor)} {command.Skill.SkillId} -> 대상 상실, 행동 취소");
@@ -42,14 +51,21 @@ public sealed class ActionResolver : IActionExecutor
         // 대상별 루프: 범위면 각 대상마다 5~12
         foreach (BattleUnit target in targeting.Targets)
         {
-            ResolvePerTarget(command.Actor, target, command.Skill);
+            ResolvePerTarget(command.Actor, target, command.Skill, currentTurn);
         }
     }
 
     // 대상 1명 5~12 스텝
-    private void ResolvePerTarget(BattleUnit actor, BattleUnit target, SkillData skill)
+    private void ResolvePerTarget(BattleUnit actor, BattleUnit target, SkillData skill, int currentTurn)
     {
-        // 5. 회피 판정: 미구현. 우선 회피 없음을 가정
+        // 5. 회피 판정: 공격 계열만 대상. 회복/보호막은 회피 무관
+        // 회피불가 스킬이 아니고 대상이 회피 보유 -> 1 즉시소모. 이 대상 통째 무효
+        if (HasDamage(skill) && !skill.IsUnavoidable && EvasionSystem.HasEvasion(target))
+        {
+            EvasionSystem.Consume(target);
+            Debug.Log($"  {Name(target)} 회피. 스킬 무효 (남은 회피 {target.EvasionCount})");
+            return;     // 6 ~ 12 전부 스킵: 피해/회복/보호막/상태이상 모두 무효
+        }
 
         int attack = actor.EffectiveAttack;
 
@@ -66,9 +82,18 @@ public sealed class ActionResolver : IActionExecutor
 
             // 9. 사망판정. 감지 로그만
             if (target.CurrHP == 0)
+            {
                 Debug.Log($"  {Name(target)} HP 0");
-
-            // 10~11. 생존 시 붕괴/균열 누적, 발생
+            }
+            // 10~11. 생존 시 붕괴/균열 누적, 발생. 사망 동시 발생 X
+            else if (target is EnemyUnit enemy && skill.BreakAmount > 0)
+            {
+                BreakCrackSystem.Accumulate(enemy, skill.BreakAmount);
+                bool broke = BreakCrackSystem.CheckAndTrigger(enemy, currentTurn, _intentSystem);
+                if (broke)
+                    Debug.Log($"  {Name(enemy)} {(enemy.IsBoss ? "균열" : "붕괴")}! 받는피해 x1.50" +
+                        (_intentSystem.IsCancelled(enemy) ? " + 예정행동 취소" : ""));
+            }
         }
 
         // --- 회복 --- //
