@@ -7,7 +7,7 @@ using UnityEngine;
 public sealed class ActionResolver : IActionExecutor
 {
     private readonly IReadOnlyList<AllyUnit> _allies;
-    private readonly IReadOnlyList<EnemyUnit> enemies;
+    private readonly IReadOnlyList<EnemyUnit> _enemies;
     private readonly ProtectionSystem _protection;      // 대상 파이프 3스텝에서 읽음. BattleFlowSystem과 같은 인스턴스
     private readonly IntentSystem _intentSystem;        // 붕괴취소
 
@@ -18,7 +18,7 @@ public sealed class ActionResolver : IActionExecutor
         IntentSystem intentSystem)
     {
         _allies = allies ?? throw new ArgumentNullException(nameof(allies));
-        this.enemies = enemies ?? throw new ArgumentNullException(nameof(enemies));
+        _enemies = enemies ?? throw new ArgumentNullException(nameof(enemies));
         _protection = protection ?? throw new ArgumentNullException(nameof(protection));
         _intentSystem = intentSystem ?? throw new ArgumentNullException(nameof(intentSystem));
     }
@@ -38,7 +38,7 @@ public sealed class ActionResolver : IActionExecutor
         }
 
         // 1~4. 대상 결정
-        TargetingResult targeting = TargetingSystem.Resolve(command, _allies, enemies, _protection);
+        TargetingResult targeting = TargetingSystem.Resolve(command, _allies, _enemies, _protection);
         if (targeting.TargetLost)
         {
             Debug.Log($"[실행] {Name(command.Actor)} {command.Skill.SkillId} -> 대상 상실, 행동 취소");
@@ -122,14 +122,14 @@ public sealed class ActionResolver : IActionExecutor
     private DamageResult ComputeDamage(BattleUnit actor, BattleUnit target, SkillData skill)
     {
         // 6. 방향 배율: 대상의 실제 방어 자세 조회. 자세 없으면 None -> 1.00
-        float diectionMod = DirectionSystem.GetMod(skill.Direction, target.GetDefenseStance());
+        float directionMod = DirectionSystem.GetMod(skill.Direction, target.GetDefenseStance());
         // 붕괴 받는 피해 증가: 대상이 이미 붕괴/균열 상태면 1.50
         float breakMod = BreakCrackSystem.GetDamageMod(target);
 
         // 7. 계산
         return CombatCalculator.CalcDamage(
             actor.EffectiveAttack, skill.DamageCoeffi, skill.FixedDamage,
-            target.EffectiveDefense, diectionMod, breakMod);
+            target.EffectiveDefense, directionMod, breakMod);
     }
 
     // 미리보기: 실제와 동일 계산. 적용만 안함. UI 예상피해 표시가 이걸 호출
