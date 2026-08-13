@@ -122,7 +122,7 @@ public sealed class ActionResolver : IActionExecutor
 
     // === wide SkillData 효과 유무(구조 부채: 한 스킬이 피해/회복/보호막 복수 보유 가능) === //
     private static bool HasDamage(SkillData s) => s.DamageCoeffi != 0f || s.FixedDamage != 0;
-    private static bool HasHealing(SkillData s) => s.HealingCoeffi != 0f || s.FixedDamage != 0;
+    private static bool HasHealing(SkillData s) => s.HealingCoeffi != 0f || s.FixedHealing != 0;
     private static bool HasShield(SkillData s) => s.ShieldCoeffi != 0f || s.FixedShield != 0;
 
     private static string Name(BattleUnit u)
