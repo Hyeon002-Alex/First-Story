@@ -11,7 +11,6 @@ public sealed class BattleFlowSystem
     private readonly IReadOnlyList<EnemyUnit> _enemies;
     private readonly IntentSystem _intentSystem;
     private readonly IActionExecutor _executor;         // 실행 구멍
-    private readonly Func<string, SkillData> _skillResolver;    // skillId 해석
 
     private int _turnNum;
 
@@ -19,14 +18,12 @@ public sealed class BattleFlowSystem
         IReadOnlyList<AllyUnit> allies,
         IReadOnlyList<EnemyUnit> enemies,
         IntentSystem intentSystem,
-        IActionExecutor executor,
-        Func<string, SkillData> skillResolver)
+        IActionExecutor executor)
     { 
         _allies = allies ?? throw new ArgumentNullException(nameof(allies));
         _enemies = enemies ?? throw new ArgumentNullException(nameof(enemies));
         _intentSystem = intentSystem ?? throw new ArgumentNullException(nameof(intentSystem));
         _executor = executor ?? throw new ArgumentNullException(nameof(executor));
-        _skillResolver = skillResolver ?? throw new ArgumentNullException(nameof(skillResolver));
         _turnNum = 0;
     }
 
@@ -69,11 +66,11 @@ public sealed class BattleFlowSystem
 
         foreach (EnemyUnit enemy in _enemies)
         {
-            if (enemy.IsIncapacitated || enemy.SkillIds.Count == 0)
+            if (enemy.IsIncapacitated || enemy.Skills.Count == 0)
                 continue;
 
-            SkillData skill = _skillResolver(enemy.SkillIds[0]);
-            if (skill == null)
+            SkillData skill = enemy.Skills[0];
+            if (skill == null)  // 미할당 슬롯 방어
                 continue;
 
             _intentSystem.SetIntent(enemy, new EnemyIntent(skill, firstLivingAlly));

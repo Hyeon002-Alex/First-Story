@@ -2,13 +2,14 @@
 using UnityEngine;
 
 // 행동 하나의 정의. 고유행동, 스킬, 아이템 등을 이 한 클래스로 표현
-// 유닛은 이걸 직접 안 물고 skillId로 참조
+// 유닛, 스킬이 이걸 직접 참조. 자기 skillId는 세이브, 로그, 재바인딩 키로 유지
 [CreateAssetMenu(fileName = "Skill_", menuName = "Laplace/Skill Data")]
 public sealed class SkillData : ScriptableObject
 {
     // 식별, 비용
-    [SerializeField] private string _skillId;
-    [SerializeField] private int _apCost;   // 아이템이면 0
+    [SerializeField] private string _skillId;       // 안정 키. 불변
+    [SerializeField] private string _displayName;   // UI 표시명. 자유 수정, 코드 분기 금지
+    [SerializeField] private int _apCost;           // 아이템이면 0
 
     // 효과 수치 - 계산 입력
     [SerializeField] private float _damageCoeffi;
@@ -24,13 +25,14 @@ public sealed class SkillData : ScriptableObject
     [SerializeField] private TargetRule _targetRule;
 
     // 부가 효과
-    [SerializeField] private List<string> _effectIds = new List<string>();   // 부여할 상태이상 Id. 순수 참조
+    [SerializeField] private List<string> _effectIds = new List<string>();   // 부여할 상태이상 Id. StatusEffectData 생기면 참조화
     [SerializeField] private bool _cleansesNormalStatus;    // 일반 상태이상 정화 여부. 부여의 반대 동작
 
     // 정보 확인 속성
     [SerializeField] private bool _isUnavoidable;       // 회피불가
 
     public string SkillId => _skillId;
+    public string DisplayName => _displayName;
     public int ApCost => _apCost;
     public float DamageCoeffi => _damageCoeffi;
     public int FixedDamage => _fixedDamage;

@@ -15,7 +15,8 @@ public sealed class AllyUnit : BattleUnit
 
     public int CurrAP => _currAP;
     public string UnitId => _data.UnitId;
-    public IReadOnlyList<string> EquippedSkillIds => _data.EquippedSkillIds;
+    public string DisplayName => _data.DisplayName;
+    public IReadOnlyList<SkillData> EquippedSkills => _data.EquippedSkills;
 
     // AP 통로: 음수만 방지, 회복량, 소모, 판정은 APSystem 소유
     public void SetAP(int value) => _currAP = Math.Max(0, value);

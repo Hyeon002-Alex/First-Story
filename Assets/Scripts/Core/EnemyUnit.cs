@@ -16,7 +16,8 @@ public sealed class EnemyUnit : BattleUnit
     public int CurrBreakOrCrackGauge => _currBreakOrCrackGauge;
     public bool IsBoss => _data.IsBoss;
     public string EnemyId => _data.EnemyId;
-    public IReadOnlyList<string> SkillIds => _data.SkillIds;
+    public string DisplayName => _data.DisplayName;
+    public IReadOnlyList<SkillData> Skills => _data.Skills;
     public string BehaviorPatternID => _data.BehaviorPatternId;
 
     // 게이지 통로: 음수만 방지. 누적량, 발생조건, 초기화는 Break/CrackSystem 소유

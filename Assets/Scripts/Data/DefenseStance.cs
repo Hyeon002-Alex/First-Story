@@ -6,15 +6,15 @@ public readonly struct DefenseStance
 { 
     public AttackDirection Defense { get; }     // 방어 자세 방향. None = 방어 자세 없음
     public AttackDirection Weakness { get; }    // 약점 방향. None = 약점 없음. 아군은 항상 None
-    public float MismathMod { get; }            // 방어는 있는데 공격 방향이 다를 때 배율. 자세별로 다름
+    public bool IsActive { get; }               // 능동(아군) = true / 패시브(적) = false. 불일치 배율 선택용
 
-    public DefenseStance(AttackDirection defense, AttackDirection weakness, float mismathMod)
+    public DefenseStance(AttackDirection defense, AttackDirection weakness, bool isActive)
     { 
         Defense = defense;
         Weakness = weakness;
-        MismathMod = mismathMod;
+        IsActive = isActive;
     }
 
     // 자세 없음
-    public static DefenseStance None => new DefenseStance(AttackDirection.None, AttackDirection.None, 1f);
+    public static DefenseStance None => new DefenseStance(AttackDirection.None, AttackDirection.None, false);
 }

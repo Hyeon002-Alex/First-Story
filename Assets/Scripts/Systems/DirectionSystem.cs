@@ -28,7 +28,7 @@ public static class DirectionSystem
 
         // 4. 방어는 있는데 불일치 -> 자세가 든 배율(아군 0.75, 적 1.00)
         if (stance.Defense != AttackDirection.None)
-            return stance.MismathMod;
+            return stance.IsActive ? AllyMismatchMod : EnemyMismatchMod;
 
         // 5. 자세 없음
         return NoneMod;
