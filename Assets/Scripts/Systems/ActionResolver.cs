@@ -135,11 +135,13 @@ public sealed class ActionResolver : IActionExecutor
         float directionMod = DirectionSystem.GetMod(skill.Direction, target.GetDefenseStance());
         // 붕괴 받는 피해 증가: 대상이 이미 붕괴/균열 상태면 1.50
         float breakMod = BreakCrackSystem.GetDamageMod(target);
+        // 상태이상 받는피해증가
+        float receivedDamageMod = target.ProductStatusMagn(EffectKind.ReceivedDamageMod);
 
         // 7. 계산
         return CombatCalculator.CalcDamage(
             actor.EffectiveAttack, skill.DamageCoeffi, skill.FixedDamage,
-            target.EffectiveDefense, directionMod, breakMod);
+            target.EffectiveDefense, directionMod, breakMod, receivedDamageMod);
     }
 
     // 미리보기: 실제와 동일 계산. 적용만 안함. UI 예상피해 표시가 이걸 호출

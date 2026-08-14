@@ -32,10 +32,11 @@ public abstract class BattleUnit
     public int EffectiveDefense => Clamp0(_baseStats.Defense + DefenseModifier);
     public int EffectiveSpeed => Clamp0(_baseStats.Speed + SpeedModifier);
 
-    // 보정원. 지금은 0
+    // 보정 = 상태 파생(부호 델타 합산). 방향(증감)은 magnitude 부호가 소유 -> Core는 순수 덧셈만
+    // 즉시 활성(적용턴 무관)
     private int AttackModifier => 0;
-    private int DefenseModifier => 0;
-    private int SpeedModifier => 0;
+    private int DefenseModifier => (int)SumStatusMag(EffectKind.DefenseMod);
+    private int SpeedModifier => (int)SumStatusMag(EffectKind.SpeedMod);
 
     // 능동(아군)/패시브(적) 구분. 방어 불일치 배율(0.75/1.00) 선택용. 자식이 결정
     protected abstract bool StanceIsActive { get; }

@@ -4,12 +4,14 @@ public readonly struct DamageResult
 { 
     public int FinalDamage { get; }
     public float DirectionMod { get; }  // 방향방어 계수
-    public float BreakMod { get; }      // 적 전용 붕괴 계스
+    public float BreakMod { get; }      // 적 전용 붕괴 계수
+    public float ReceivedDamageMod { get; } // 상태이상 받는피해증가. 붕괴와 분리
 
-    public DamageResult(int finalDamage, float directionMod, float breakMod)
+    public DamageResult(int finalDamage, float directionMod, float breakMod, float receivedDamageMod)
     {
         FinalDamage = finalDamage;
         DirectionMod = directionMod;
         BreakMod = breakMod;
+        ReceivedDamageMod = receivedDamageMod;
     }
 }

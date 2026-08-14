@@ -17,7 +17,13 @@ public static class APSystem
             if (ally.IsIncapacitated)
                 continue;
 
-            int recovered = Math.Min(ally.CurrAP + _apGainPerTurn, _maxAP);
+            // AP회복보정: 부호 델타 합산. 다음 턴부터 지연반영
+            // 여러 개 겹여 음수가 되면 0 클램프
+            int gain = _apGainPerTurn + (int)ally.SumStatusMag(EffectKind.APRecoveryMod);
+            if (gain < 0)
+                gain = 0;
+
+            int recovered = Math.Min(ally.CurrAP + gain, _maxAP);
             ally.SetAP(recovered);
         }
     }
