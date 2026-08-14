@@ -13,7 +13,7 @@ public static class BreakCrackSystem
         if(target == null)
             throw new ArgumentNullException(nameof(target));
 
-        return target.DamageTakenMod;
+        return target.BreakDamageMod;
     }
 
     // 게이지 누적. 붕괴량 직독
@@ -47,7 +47,7 @@ public static class BreakCrackSystem
             return false;
 
         enemy.SetGauge(0);
-        enemy.SetDamageTakenMod(_brokenMod, currentTurn + 1);
+        enemy.SetBreakDamageMod(_brokenMod, currentTurn + 1);
 
         // 붕괴만 행동 취소. 이미 행동했으면 취소 안 함
         if (!enemy.IsBoss && !enemy.ActedThisTurn)
@@ -61,10 +61,10 @@ public static class BreakCrackSystem
     { 
         if(unit == null)
             throw new ArgumentNullException(nameof(unit));
-        if (IsBroken(unit) && unit.DamageTakenModExpireTurn <= currentTurn)
-            unit.SetDamageTakenMod(1.00f, 0);
+        if (IsBroken(unit) && unit.BreakDamageModExpireTurn <= currentTurn)
+            unit.SetBreakDamageMod(1.00f, 0);
     }
 
     // 붕괴/균열 상태 = 받는피해증가 활성
-    private static bool IsBroken(BattleUnit unit) => unit.DamageTakenMod > 1.00f;
+    private static bool IsBroken(BattleUnit unit) => unit.BreakDamageMod > 1.00f;
 }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // 한 행동 실행 파이프 소유, 조율. IActionExecutor 구현
-// 계산/반정/젹옹은 전부 하위 시스템 위임
+// 계산/반정/적옹은 전부 하위 시스템 위임
 public sealed class ActionResolver : IActionExecutor
 {
     private readonly IReadOnlyList<AllyUnit> _allies;
@@ -44,7 +44,6 @@ public sealed class ActionResolver : IActionExecutor
             Debug.Log($"[실행] {Name(command.Actor)} {command.Skill.SkillId} -> 대상 상실, 행동 취소");
             return;
         }
-
 
         Debug.Log($"[실행] {Name(command.Actor)} {command.Skill.SkillId} (대상 {targeting.Targets.Count}명)");
 
@@ -114,7 +113,18 @@ public sealed class ActionResolver : IActionExecutor
             Debug.Log($"  {Name(target)} 보호막 +{shield} -> 총 {target.Shield}");
         }
 
-        // 12. 상태이상 적용: 미구현. skill.EffectIds -> StatusEffectSystem. 회피 시 5에서 함께 무효
+        // 12. 상태이상: 부여 + 정화. 회피 시 5스텝 return이 이 블록까지 통째 스킵(피해+동반 상태이상 무효)
+        // 피해 없는 디버프는 회피 게이트 밖이라 여기 도달. 확정 부여
+        foreach (StatusEffectData effect in skill.Effects)
+        { 
+            StatusEffectSystem.Apply(target, effect, actor, currentTurn);
+            Debug.Log($"  {Name(target)} 상태이상 부여: {effect.StatusId}");
+        }
+        if (skill.CleansesNormalStatus)
+        {
+            StatusEffectSystem.Cleanse(target);
+            Debug.Log($"  {Name(target)} 일반 상태이상 회복");
+        }
     }
 
     // === 피해 계산 단일 경로 === //

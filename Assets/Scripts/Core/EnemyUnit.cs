@@ -22,6 +22,9 @@ public sealed class EnemyUnit : BattleUnit
     public IReadOnlyList<SkillData> Skills => _data.Skills;
     public string BehaviorPatternID => _data.BehaviorPatternId;
 
+    // 상태이상 면역 목록. 면역 판정은 StatusEffectSystem 소유, 여긴 데이터 노출만
+    public IReadOnlyList<StatusEffectData> StatudImmunities => _data.StatusImmunities;
+
     // 적 자세 = 패시브. 불일치 시 1.00 무보상. 자세 부여 스킬은 v0.1.0 미사용
     protected override bool StanceIsActive => false;
 

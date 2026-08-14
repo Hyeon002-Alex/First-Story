@@ -24,8 +24,8 @@ public sealed class SkillData : ScriptableObject
     // 대상
     [SerializeField] private TargetRule _targetRule;
 
-    // 부가 효과
-    [SerializeField] private List<string> _effectIds = new List<string>();   // 부여할 상태이상 Id. StatusEffectData 생기면 참조화
+    // 부여할 상태이상. StatusEffectData 직접 참조로 전환
+    [SerializeField] private List<StatusEffectData> _effects = new List<StatusEffectData>();   // 부여할 상태이상 Id
     [SerializeField] private bool _cleansesNormalStatus;    // 일반 상태이상 정화 여부. 부여의 반대 동작
 
     // 정보 확인 속성
@@ -43,7 +43,7 @@ public sealed class SkillData : ScriptableObject
     public int BreakAmount => _breakAmount;
     public AttackDirection Direction => _direction;
     public TargetRule TargetRule => _targetRule;
-    public IReadOnlyList<string> EffectIds => _effectIds;  // 읽기전용 목록 → 밖에서 Add/Remove 못 함
+    public IReadOnlyList<StatusEffectData> Effects => _effects;  // 읽기전용 목록 -> 밖에서 Add/Remove 못 함
     public bool CleansesNormalStatus => _cleansesNormalStatus;
     public bool IsUnavoidable => _isUnavoidable;
 }

@@ -1,4 +1,6 @@
 ﻿// 아군, 적 공통 부모. HP가 있고 피격되는 물체의 공통 런타임 클래스
+using System.Collections.Generic;
+
 public abstract class BattleUnit
 {
     protected readonly UnitStats _baseStats;    // 정적 기본 스탯 참조. 자식 _data에서 넘어옴
@@ -19,10 +21,11 @@ public abstract class BattleUnit
     public int EvasionCount => _runtime.EvasionCount;
     public bool IsIncapacitated => _isIncapacitated;
     public bool ActedThisTurn => _actedThisTurn;
-    public float DamageTakenMod => _runtime.DamageTakenMod;
-    public int DamageTakenModExpireTurn => _runtime.DamageTakenModExpireTurn;
+    public float BreakDamageMod => _runtime.BreakDamageMod;
+    public int BreakDamageModExpireTurn => _runtime.BreakDamageModExpireTurn;
     public AttackDirection DefenseDirection => _runtime.DefenseDirection;
     public AttackDirection WeaknessDirection => _runtime.WeaknessDirection;
+    public IReadOnlyList<RuntimeStatusEffect> StatusEffects => _runtime.StatusEffects;
 
     // === 읽기: 유효 스탯. 단일 경로, 기본 + 보정, 보정 = 일시강화 - 상태 파생, 지금은 0 === //
     public int EffectiveAttack => Clamp0(_baseStats.Attack + AttackModifier);
@@ -54,11 +57,21 @@ public abstract class BattleUnit
     public void SetEvasion(int value) => _runtime.SetEvasion(value);
     public void SetIncapacitated(bool value) => _isIncapacitated = value;
     public void SetActed(bool value) => _actedThisTurn = value;
-    public void SetDamageTakenMod(float mod, int expireTurn)
-        => _runtime.SetDamageTakenMod(mod, expireTurn);
+    public void SetBreakDamageMod(float mod, int expireTurn)
+        => _runtime.SetBreakDamageMod(mod, expireTurn);
     public void SetStance(AttackDirection defenseDir, AttackDirection weaknessDir)
         => _runtime.SetStance(defenseDir, weaknessDir);
     public void ClearStance() => _runtime.ClearStance();
+
+    // === 상태이상 통로: RuntimeStats 위임. 규칙은 StatusEffectSystem 소유 === //
+    public void AddStatusEffect(RuntimeStatusEffect effect) => _runtime.AddStatusEffect(effect);
+    public void RemoveStatusEffect(RuntimeStatusEffect effect) => _runtime.RemoveStatusEffect(effect);
+    public RuntimeStatusEffect FindStatusEffect(string statusId) => _runtime.FindStatusEffect(statusId);
+
+    // === 상태 파생 집계 위임. 유효스탯/AP/회복/행동차단 소비처가 이걸 호출 === //
+    public float SumStatusMag(EffectKind kind) => _runtime.SumStatusMag(kind);
+    public float ProductStatusMagn(EffectKind kind) => _runtime.ProductStatusMag(kind);
+    public bool HasStatusComponent(EffectKind kind) => _runtime.HasStatusComponent(kind);
 
     // 유효 스탯 하한 0
     private static int Clamp0(int v) => v < 0 ? 0 : v;

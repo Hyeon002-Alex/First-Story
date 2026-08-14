@@ -4,7 +4,6 @@ using System.Linq;
 using UnityEngine;  // 프로토타입 로그용. 로직 계산엔 미사용
 
 // 글로벌 턴 루프 9단계 소유, 조율. 각 단계에서 하위 시스템 호출
-// 미설계 단계(5, 6, 8, 9 + 7실행)은 구멍. 로그 인터페이스 자리만
 public sealed class BattleFlowSystem
 {
     private readonly IReadOnlyList<AllyUnit> _allies;
@@ -128,9 +127,42 @@ public sealed class BattleFlowSystem
         }
     }
 
-    // 8. 턴종료. 보호 소거. 받는피해증가/방향방어 만료. 상태이상 만료는 미구현
+    // 8. 턴종료. 순서: 지속피해 틱 -> 전투불능 -> 지속감소/만료 -> 전투상태 만료
+    // 틱이 감소보다 앞이라 마지막 틱 보존. 승패/웨이브 판정은 9단계
     private void Step8_TurnEnd()
     {
+        List<BattleUnit> all = AllUnits().ToList();
+
+        // 1. 지속피해 틱. StatusEffectSystem은 순수라, 틱 전 HP 기록해 손실분만 여기서 로그
+        Dictionary<BattleUnit, int> hpBefore = new Dictionary<BattleUnit, int>();
+        foreach (BattleUnit u in all)
+        {
+            hpBefore[u] = u.CurrHP;
+        }
+
+        StatusEffectSystem.TickAll(all, _turnNum);
+
+        foreach (BattleUnit u in all)   // 순회는 all 순서. hpBefore은 키 조회만
+        {
+            int lost = hpBefore[u] - u.CurrHP;
+            if (lost > 0)
+                Debug.Log($"  [8 지속피해] {UnitId(u)} -{lost} -> HP {u.CurrHP}/{u.MaxHP}");
+        }
+
+        // 2. 사망.전투불능. 틱으로 HP0 도달 유닛
+        foreach (BattleUnit u in all)
+        {
+            if (u.CurrHP == 0 && !u.IsIncapacitated)
+            { 
+                u.SetIncapacitated(true);
+                Debug.Log($"[8 전투불능] {UnitId(u)}");
+            }
+        }
+
+        // 3, 4. 상태이상 지속감소 + 만료제거
+        StatusEffectSystem.DecrementAndExpire(all, _turnNum);
+
+        // 5. 전투상태 만료: 보호 소거 + 붕괴 받는피해증가 만료(적) + 아군 방어 만료
         _protection.ClearAll();
         foreach (EnemyUnit e in _enemies)
         { 
@@ -142,7 +174,7 @@ public sealed class BattleFlowSystem
             a.ClearStance();
         }
        
-        Debug.Log("[8 턴종료] 보호 소거 + 받는피해증가/방향방어 만료. 나머지 구멍(묶음3");
+        Debug.Log("[8 턴종료] 상태이상 틱/전이/감소/만료 + 전투상태 만료");
     }
 
     // 9. 판정. 미구현: 전멸, 승리, 웨이브 전환

@@ -14,7 +14,7 @@ public sealed class EnemyUnitData : ScriptableObject
     [SerializeField] private int _maxCrackGauge;
 
     [SerializeField] private List<SkillData> _skills = new List<SkillData>();        // 사용 스킬
-    [SerializeField] private List<string> _statusImmunityIds = new List<string>();  // 상태이상 면역. StatusEffectData 생기면 참조화
+    [SerializeField] private List<StatusEffectData> _statusImmunities = new List<StatusEffectData>();  // 상태이상 면역
     [SerializeField] private string _behaviorPatternId;                             // AI 팩토리 키. 가리킬 단일 SO 없음. 문자열 유지
     [SerializeField] private UnitStats _baseStats;
 
@@ -24,7 +24,7 @@ public sealed class EnemyUnitData : ScriptableObject
     public int MaxBreakGauge => _maxBreakGauge;
     public int MaxCrackGauge => _maxCrackGauge;
     public IReadOnlyList<SkillData> Skills => _skills;
-    public IReadOnlyList<string> StatusImmunityIds => _statusImmunityIds;
+    public IReadOnlyList<StatusEffectData> StatusImmunities => _statusImmunities;
     public string BehaviorPatternId => _behaviorPatternId;
     public UnitStats BaseStats => _baseStats;
 }
