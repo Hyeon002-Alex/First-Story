@@ -136,7 +136,7 @@ public sealed class ActionResolver : IActionExecutor
         // 붕괴 받는 피해 증가: 대상이 이미 붕괴/균열 상태면 1.50
         float breakMod = BreakCrackSystem.GetDamageMod(target);
         // 상태이상 받는피해증가
-        float receivedDamageMod = target.ProductStatusMagn(EffectKind.ReceivedDamageMod);
+        float receivedDamageMod = target.ProductStatusMag(EffectKind.ReceivedDamageMod);
 
         // 7. 계산
         return CombatCalculator.CalcDamage(

@@ -7,19 +7,19 @@ public sealed class RuntimeStatusEffect
     public StatusEffectData Definition { get; }
     public int AppliedTurn { get; }                     // 지연틱 판정 기준
     public int RemainingDuration { get; private set; }
-    public int DamageSnapShot { get; private set; }     // 지속피해 조각. 없으면 0
+    public int DamageSnapshot { get; private set; }     // 지속피해 조각. 없으면 0
 
     public RuntimeStatusEffect(StatusEffectData definition, int appliedTurn, int remainingDuration, int damageSnapShot)
     {
         Definition = definition ?? throw new ArgumentNullException(nameof(definition));
         AppliedTurn = appliedTurn;
         RemainingDuration = remainingDuration;
-        DamageSnapShot = damageSnapShot;
+        DamageSnapshot = damageSnapShot;
     }
 
     // 중첩 갱신: 합산 안 함. 더 긴 지속 / 더 강한 스냅샷 유지
     public void RefreshDuration(int newDuration) => RemainingDuration = Math.Max(RemainingDuration, newDuration);
-    public void RefreshSnapShot(int newSnapShot) => DamageSnapShot = Math.Max(DamageSnapShot, newSnapShot);
+    public void RefreshSnapShot(int newSnapShot) => DamageSnapshot = Math.Max(DamageSnapshot, newSnapShot);
 
     // 지속감소, 만료, 지연틱 통로. 통로만 심고 실제 호출은 8단계에서
     public void Decrement() => RemainingDuration--;

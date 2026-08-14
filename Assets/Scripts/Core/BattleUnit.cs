@@ -71,7 +71,7 @@ public abstract class BattleUnit
 
     // === 상태 파생 집계 위임. 유효스탯/AP/회복/행동차단 소비처가 이걸 호출 === //
     public float SumStatusMag(EffectKind kind) => _runtime.SumStatusMag(kind);
-    public float ProductStatusMagn(EffectKind kind) => _runtime.ProductStatusMag(kind);
+    public float ProductStatusMag(EffectKind kind) => _runtime.ProductStatusMag(kind);
     public bool HasStatusComponent(EffectKind kind) => _runtime.HasStatusComponent(kind);
 
     // 유효 스탯 하한 0

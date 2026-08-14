@@ -6,6 +6,6 @@ public enum EffectKind
     DefenseMod,             // 방어보정
     APRecoveryMod,          // AP회복보정
     ActionBlock,            // 행동차단. magnitude = 미사용. 존재만 함
-    ReceivedHeaingMod,      // 받는회복보정. magnitude = 배율
+    ReceivedHealingMod,      // 받는회복보정. magnitude = 배율
     ReceivedDamageMod,      // 받는피해보정. magnitude = 배율. 붕괴와 분리된 개념
 }

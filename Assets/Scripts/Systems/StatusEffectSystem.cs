@@ -75,8 +75,8 @@ public static class StatusEffectSystem
         foreach (RuntimeStatusEffect e in unit.StatusEffects)
         { 
             // 지속피해 조각 있는 인스턴스만 스냅샷 > 0. 적용 턴 인스턴스는 통째 스킵
-            if(e.DamageSnapShot >0 && e.IsTickable(currentTurn))
-                DamageSystem.Apply(unit, e.DamageSnapShot);
+            if(e.DamageSnapshot >0 && e.IsTickable(currentTurn))
+                DamageSystem.Apply(unit, e.DamageSnapshot);
         }
     }
 
