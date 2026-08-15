@@ -1,40 +1,60 @@
 ﻿using System;
+using UnityEngine.UIElements;
 
 // 피해, 회복, 보호막 순수 계산. 상태 없음. HP 건드리지 않음. UnityEngine 미의존
 // 예상=실제의 열쇠: 미리보기도 실제도 이 함수를 똑같이 호출
-// 배율(방향, 붕괴, 받는회복)은 밖에서 판정에 숫자로 주입. 계산 함수는 곱하기만
-// 예외: 방어보정 100/(100+방어) 는 스탯 직독 산수라 이 안에서 처리
+// [정수 스케일 계산] 계수/배율(float)을 진입점에서 스케일 정수로 반올림(1.3f -> 130)
+// 반올림이 float 표현오차를 흡수 -> 이후 정수 산출 -> 오차 없음
+// Scale = 배율/계수 유효 소수자리(2자리)
 public static class CombatCalculator
 {
-    // 피해 사슬: 기본피해 * 방어보정 * 방어계수 * 붕괴 -> 소수점 버림, 최소 1
+    private const int _scale = 100;
+
+    // 피해 사슬: 기본피해 * 방어보정 * 방어계수 * 붕괴 * 받는피해증가 -> 소수점 버림, 최소 1
     // directionMod, breakMod, receivedDamageMod = 밖에서 판정한 배율. 보정 없으면 1.0f 주입
     public static DamageResult CalcDamage(
         int attack, float damageCoeffi, int fixedDamage,
         int defense, float directionMod, float breakMod, float receivedDamageMod)
     {
-        double basePower = attack * (double)damageCoeffi + fixedDamage;         // 공격력, 계수, 고정피해
-        double defenseCorrection = 100.0 / (100.0 + defense);                   // 방어보정
-        // 방향 -> 붕괴 -> 기타 명시적 보정. 붕괴와 받는피해증가는 분리된 별개 배율
-        double raw = basePower * defenseCorrection * directionMod * breakMod * receivedDamageMod;
-        int finalDamage = Math.Max(1, FloorToInt(raw));                         // 버림, 최소 1
+        long baseScaled = (long)attack * ToScaled(damageCoeffi) + (long)fixedDamage * _scale;
+        long dir = ToScaled(directionMod);
+        long brk = ToScaled(breakMod);
+        long rcv = ToScaled(receivedDamageMod);
+
+        // 최종 = baseScaled / _s * 100/(100+def) * dir/_s * brk/_s * rcv/_s
+        long numerator = baseScaled * 100L * dir * brk * rcv;
+        long denominator = (long)(100 + defense) * _scale * _scale * _scale * _scale;
+        int finalDamage = (int)Math.Max(1, numerator / denominator);   // 양수 정수나눗셈 = floor
 
         return new DamageResult(finalDamage, directionMod, breakMod, receivedDamageMod);
     }
 
     // 회복: 방어, 방향, 붕괴 무보정. 받는회복량 보정만 밖에서 주임
     public static int CalcHealing(int attack, float healingCoeffi, int fixedHealing, float receivedHealingMod)
-    { 
-        double raw = (attack * (double)healingCoeffi + fixedHealing) * receivedHealingMod;
-        return Math.Max(0, FloorToInt(raw));
+    {
+        long baseScaled = (long)attack * ToScaled(healingCoeffi) + (long)fixedHealing * _scale;
+        long rcv = ToScaled(receivedHealingMod);
+        long numerator = baseScaled * rcv;
+        long denominator = (long)_scale * _scale;
+        return (int)(numerator / denominator);
     }
 
     // 보호막: 모든 보정 없음. 순수 계수 계산
     public static int CalcShield(int attack, float shiedlCoeffi, int fixedShield)
     { 
-        double raw = attack * (double)shiedlCoeffi + fixedShield;
-        return Math.Max(0, FloorToInt(raw));
+        long baseScaled = (long)attack * ToScaled(shiedlCoeffi) + (long)fixedShield * _scale;
+        return (int)Math.Max(0, baseScaled / _scale);
     }
 
-    // 소수점 버림
-    private static int FloorToInt(double value) => (int)Math.Floor(value);
+    // 
+
+    // 배율/방어 없는 순수 계수 곱
+    public static int CalcFlat(int attack, float coeffi)
+    { 
+        long baseScaled = (long)attack * ToScaled(coeffi);
+        return (int)Math.Max(0, baseScaled / _scale);
+    }
+
+    // float 계수/배율 -> 스케일 정수. 반올림이 표현오차 흡수
+    private static long ToScaled(float value) => (long)Math.Round(value * _scale, MidpointRounding.AwayFromZero);
 }

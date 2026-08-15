@@ -124,12 +124,13 @@ public static class StatusEffectSystem
     }
 
     // 지속피해 조각 magnitude로 스냅샷 계산. 방어/방향/붕괴 무보정
+    // 정수 스케일 계산은 CombatCalculator 단일 소유에 위임
     private static int ComputeDamageSnapshot(StatusEffectData def, BattleUnit caster)
     {
         foreach (EffectComponent c in def.Components)
         {
             if (c.EffectKind == EffectKind.DamageOverTime)
-                return Math.Max(0, (int)Math.Floor(caster.EffectiveAttack * (double)c.Magnitude));
+                return CombatCalculator.CalcFlat(caster.EffectiveAttack, c.Magnitude);
         }
         return 0;
     }
