@@ -11,6 +11,7 @@ public sealed class BattleFlowSystem
     private readonly IntentSystem _intentSystem;
     private readonly ProtectionSystem _protection;       // 6단계 선언, 8단계 소거. ActionResolver와 같은 인스턴스
     private readonly IActionExecutor _executor;          // 실행 구멍
+    private readonly WaveSystem _waveSystem;             // 9단계 웨이브 전환 판정에서 호출
 
     private int _turnNum;
 
@@ -19,20 +20,22 @@ public sealed class BattleFlowSystem
         List<EnemyUnit> enemies,
         IntentSystem intentSystem,
         ProtectionSystem protection,
-        IActionExecutor executor)
+        IActionExecutor executor,
+        WaveSystem waveSystem)
     { 
         _allies = allies ?? throw new ArgumentNullException(nameof(allies));
         _enemies = enemies ?? throw new ArgumentNullException(nameof(enemies));
         _intentSystem = intentSystem ?? throw new ArgumentNullException(nameof(intentSystem));
         _protection = protection ?? throw new ArgumentNullException(nameof(protection));
         _executor = executor ?? throw new ArgumentNullException(nameof(executor));
+        _waveSystem = waveSystem ?? throw new ArgumentNullException(nameof(waveSystem));
         _turnNum = 0;
     }
 
     public int TurnNum => _turnNum;
 
-    // 한 글로벌 턴 = 9단계 순차 실행
-    public void ExecuteTurn()
+    // 한 글로벌 턴 = 9단계 순차 실행. 판정 결과 반환 -> 상위 루프가 계속/종료 제어
+    public BattleOutcome ExecuteTurn()
     {
         Step1_TurnStart();
         Step2_RecoverAP();
@@ -42,7 +45,7 @@ public sealed class BattleFlowSystem
         Step6_DefenseResponse();
         Step7_ExecuteBySpeed();      // 골조 — 정렬 1회 + 유효성 재검사
         Step8_TurnEnd();
-        Step9_Judge();
+        return Step9_Judge();
     }
 
     // 1. 턴 시작. 턴번호 증가 + 전원 행동완료 플래그 리셋
@@ -174,9 +177,47 @@ public sealed class BattleFlowSystem
         Debug.Log("[8 턴종료] 상태이상 틱/전이/감소/만료 + 전투상태 만료");
     }
 
-    // 9. 판정. 미구현: 전멸, 승리, 웨이브 전환
-    private void Step9_Judge() 
-        => Debug.Log("[9 판정] 구멍(묶음3)");
+    // 9. 판정 4갈래. 전멸 -> 승리/웨이브전환 -> 페이즈 -> 진행
+    // 전멸, 승리 순서가 동시 HP0을 패배로 처리
+    private BattleOutcome Step9_Judge()
+    {
+        // 전멸: 전 아군 전투불능 -> 패배
+        if (_allies.All(a => a.IsIncapacitated))
+        {
+            Debug.Log("[9 판정] 전 아군 전투불능 -> 패배");
+            return BattleOutcome.Defeat;
+        }
+
+        // 현 웨이브 적 전멸
+        if (_enemies.All(e => e.IsIncapacitated))
+        {
+            if (_waveSystem.HasNextWave)
+            {
+                _waveSystem.AdvanceToNextWave();    // 전투는 계속
+                return BattleOutcome.Ongoing;
+            }
+            Debug.Log("[9 판정] 마지막 웨이브 적 전멸 -> 승리");
+            return BattleOutcome.Victory;
+        }
+
+        // 페이즈 전환: 동일 보스 유지, 적 생존 중 게이지/자세 리셋. 웨이브 전환과 다른 경로
+        // 트리거가 미확정이라 false
+        if (CheckPhaseTransition())
+        { 
+            // 확정 시 리셋 로직 삽입. 전투 계속
+            return BattleOutcome.Ongoing;
+        }
+
+        // 그 외: 다음 턴
+        return BattleOutcome.Ongoing;
+    }
+
+    // 페이즈 전환 트리거
+    // 확정 시 보스 전용 시스템이 조건을 채움. 리셋 통로도 그때 추가
+    private bool CheckPhaseTransition()
+    {
+        return false;
+    }
 
     // === 7단계 보조 === //
     // 참여자 = 잔체 아군 + 전체 적. 아군 먼저 -> 슬롯 인덱스 순
