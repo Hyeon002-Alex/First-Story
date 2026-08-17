@@ -149,14 +149,11 @@ public sealed class BattleFlowSystem
                 Debug.Log($"  [8 지속피해] {UnitId(u)} -{lost} -> HP {u.CurrHP}/{u.MaxHP}");
         }
 
-        // 2. 사망.전투불능. 틱으로 HP0 도달 유닛
+        // 2. 사망.전투불능. 틱으로 HP0 도달 유닛. 규칙은 UncapacitationSystem 단일 소유
         foreach (BattleUnit u in all)
         {
-            if (u.CurrHP == 0 && !u.IsIncapacitated)
-            { 
-                u.SetIncapacitated(true);
+            if (IncapacitationSystem.CheckAndTransition(u))
                 Debug.Log($"[8 전투불능] {UnitId(u)}");
-            }
         }
 
         // 3, 4. 상태이상 지속감소 + 만료제거

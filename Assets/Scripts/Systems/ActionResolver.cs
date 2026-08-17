@@ -79,10 +79,12 @@ public sealed class ActionResolver : IActionExecutor
             Debug.Log($"  {Name(target)} 피해 {dmg.FinalDamage} (흡수 {applied.ShieldAbsorbed}/HP {applied.HPLost})" +
                 $" [dir {dmg.DirectionMod} brk {dmg.BreakMod}] HP {target.CurrHP}/{target.MaxHP}");
 
-            // 9. 사망판정. 감지 로그만
-            if (target.CurrHP == 0)
+            // 9. 사망판정. HP0 도달 시 즉시 전투불능
+            // 즉시 전이해야 IsStillValid 대상상실 검사가 죽은 대상을 정확히 거름
+            // CheckAndTransition 가 true = 이 공격으로 방금 전투불능 -> 붕괴 누적 스킵
+            if (IncapacitationSystem.CheckAndTransition(target))
             {
-                Debug.Log($"  {Name(target)} HP 0");
+                Debug.Log($"  {Name(target)} HP 0 -> 전투불능");
             }
             // 10~11. 생존 시 붕괴/균열 누적, 발생. 사망 동시 발생 X
             else if (target is EnemyUnit enemy && skill.BreakAmount > 0)
