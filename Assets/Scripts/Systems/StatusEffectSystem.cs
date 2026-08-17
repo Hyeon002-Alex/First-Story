@@ -36,17 +36,36 @@ public static class StatusEffectSystem
         }
     }
 
-    // 정화: 일반 전부 제거. 정화 스킬/아이템 공용. 특수는 면제
+    // 정화: 일반 전부 제거. 정화 스킬/아이템 공용. 특수/버프는 면제
     public static void Cleanse(BattleUnit target)
+        => RemoveByCategory(target, StatusEffectCategory.Normal);
+
+    // 웨이브 복귀 유닛 일반상태 제거. 복귀 유닛에게만 호출. 생존 유닛은 일반상태 유지
+    public static void ClearNormal(BattleUnit target)
+        => RemoveByCategory(target, StatusEffectCategory.Normal);
+
+    // 버프 강제소거: 일시강화 = 전투상태라 웨이브 전환 시 전원 제거
+    public static void ClearBuff(IEnumerable<BattleUnit> units)
+    {
+        if (units == null)
+            throw new ArgumentNullException(nameof(units));
+
+        foreach (BattleUnit u in units)
+        { 
+            RemoveByCategory(u, StatusEffectCategory.Buff);
+        }
+    }
+
+    // 카테고리별 제거 공통. 순회 중 제거 회피: 대상 먼저 수집 후 제거
+    private static void RemoveByCategory(BattleUnit target, StatusEffectCategory category)
     {
         if (target == null)
             throw new ArgumentNullException(nameof(target));
 
-        // 순회 중 제거 회피: 대상 먼저 수집 후 제거
         List<RuntimeStatusEffect> toRemove = new List<RuntimeStatusEffect>();
         foreach (RuntimeStatusEffect e in target.StatusEffects)
-        {
-            if (e.Definition.Category == StatusEffectCategory.Normal)
+        { 
+            if(e.Definition.Category == category)
                 toRemove.Add(e);
         }
         foreach (RuntimeStatusEffect e in toRemove)

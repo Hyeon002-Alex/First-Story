@@ -7,7 +7,7 @@ using UnityEngine;  // 프로토타입 로그용. 로직 계산엔 미사용
 public sealed class BattleFlowSystem
 {
     private readonly IReadOnlyList<AllyUnit> _allies;
-    private readonly IReadOnlyList<EnemyUnit> _enemies;
+    private readonly List<EnemyUnit> _enemies;           // 웨이브 전환 시 WaveSystem이 내용 교체. 참조는 불변
     private readonly IntentSystem _intentSystem;
     private readonly ProtectionSystem _protection;       // 6단계 선언, 8단계 소거. ActionResolver와 같은 인스턴스
     private readonly IActionExecutor _executor;          // 실행 구멍
@@ -16,7 +16,7 @@ public sealed class BattleFlowSystem
 
     public BattleFlowSystem(
         IReadOnlyList<AllyUnit> allies,
-        IReadOnlyList<EnemyUnit> enemies,
+        List<EnemyUnit> enemies,
         IntentSystem intentSystem,
         ProtectionSystem protection,
         IActionExecutor executor)
