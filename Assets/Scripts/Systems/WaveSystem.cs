@@ -51,7 +51,7 @@ public sealed class WaveSystem
         { 
             if (a.IsIncapacitated)
             {
-                a.ModifyHP(1);                      // 전투불능 -> HP0 불변식 -> 0+1 = 1
+                a.ModifyHP(1 - a.CurrHP);           // 항상 HP1로
                 a.SetIncapacitated(false);
                 StatusEffectSystem.ClearNormal(a);  // 복귀유닛만. 생존유닛 일반상태는 유지
                 Debug.Log($"[웨이브 복귀] {a.UnitId} HP1, AP {a.CurrAP} 유지");
