@@ -12,6 +12,7 @@ public sealed class BattleFlowSystem
     private readonly ProtectionSystem _protection;       // 6단계 선언, 8단계 소거. ActionResolver와 같은 인스턴스
     private readonly IActionExecutor _executor;          // 실행 구멍
     private readonly WaveSystem _waveSystem;             // 9단계 웨이브 전환 판정에서 호출
+    private readonly EnemyBehaviorSystem _behaviorSystem;   // 3단계 적 intent 결정. 더미 대체(G-3)
 
     private int _turnNum;
 
@@ -21,7 +22,8 @@ public sealed class BattleFlowSystem
         IntentSystem intentSystem,
         ProtectionSystem protection,
         IActionExecutor executor,
-        WaveSystem waveSystem)
+        WaveSystem waveSystem,
+        EnemyBehaviorSystem behaviorSystem)
     { 
         _allies = allies ?? throw new ArgumentNullException(nameof(allies));
         _enemies = enemies ?? throw new ArgumentNullException(nameof(enemies));
@@ -29,6 +31,7 @@ public sealed class BattleFlowSystem
         _protection = protection ?? throw new ArgumentNullException(nameof(protection));
         _executor = executor ?? throw new ArgumentNullException(nameof(executor));
         _waveSystem = waveSystem ?? throw new ArgumentNullException(nameof(waveSystem));
+        _behaviorSystem = behaviorSystem ?? throw new ArgumentNullException(nameof(behaviorSystem));
         _turnNum = 0;
     }
 
@@ -39,7 +42,7 @@ public sealed class BattleFlowSystem
     {
         Step1_TurnStart();
         Step2_RecoverAP();
-        Step3_AssignEnemyIntent();   // 더미 intent
+        Step3_AssignEnemyIntent();
         Step4_Reveal();
         Step5_InfoResponse();
         Step6_DefenseResponse();
@@ -66,25 +69,20 @@ public sealed class BattleFlowSystem
         Debug.Log($"[2 AP회복 {string.Join(", ", _allies.Select(a => $"{a.UnitId}:{a.CurrAP}"))}");
     }
 
-    // 3. 적 intent 생성. 더미: 각 적에게 첫 skillId + 첫 생존 아군
-    // 매 턴 새로 파생
+    // 3. 적 intent 결정. 실제 AI: 각 적 behavior.Decide -> IntentSystem 등록
+    // ClearAll은 여기서(턴 경계 초기화 = 턴 루프 소유). 결정·등록은 EnemyBehaviorSystem
     private void Step3_AssignEnemyIntent()
     {
         _intentSystem.ClearAll();
-        AllyUnit firstLivingAlly = _allies.FirstOrDefault(a => !a.IsIncapacitated);
 
-        foreach (EnemyUnit enemy in _enemies)
-        {
-            if (enemy.IsIncapacitated || enemy.Skills.Count == 0)
-                continue;
+        // 스냅샷 = 생존 필터 완료본(계약). LivingAllies = 공격 대상 후보(플레이어측),
+        // LivingEnemies = 결정 주체 진영(적측, SurvivingAllyAtLeast 조건이 봄)
+        BattleSnapshot snapshot = new BattleSnapshot(
+            _turnNum,
+            _allies.Where(a => !a.IsIncapacitated).ToList(),
+            _enemies.Where(e => !e.IsIncapacitated).ToList());
 
-            SkillData skill = enemy.Skills[0];
-            if (skill == null)  // 미할당 슬롯 방어
-                continue;
-
-            _intentSystem.SetIntent(enemy, new EnemyIntent(skill, firstLivingAlly));
-            Debug.Log($"[3 Intent] {enemy.EnemyId} -> {skill.SkillId} 대상 {(firstLivingAlly != null ? firstLivingAlly.UnitId : "없음")}");
-        }
+        _behaviorSystem.DecideAll(snapshot);
     }
 
     // 4. 공개. UI 후순위. 골격은 대상, 방향만 읽어 로그
