@@ -32,35 +32,35 @@ public sealed class G_IntegrationProbe : MonoBehaviour
     // ============================================================
     private void RunG1()
     {
-        // Always = 무조건 true
-        Check("G1-1 Always true", BehaviorCondition.CreateAlways().Evaluate(0.5f, 1, 1));
+        // Always = 무조건 true (HP 인자는 무관, 유효값 주입)
+        Check("G1-1 Always true", BehaviorCondition.CreateAlways().Evaluate(50, 100, 1, 1));
 
-        // SelfHpBelow(0.3) 경계 = 미만(<). ratio==threshold이면 false
+        // SelfHpBelow(0.3) 경계 = 미만(<). currHp/maxHp==threshold이면 false
         BehaviorCondition hp = BehaviorCondition.CreateSelfHpBelow(0.3f);
-        Check("G1-2 SelfHpBelow 0.29 true", hp.Evaluate(0.29f, 1, 1));
-        Check("G1-3 SelfHpBelow 경계 0.30 false", !hp.Evaluate(0.30f, 1, 1));
-        Check("G1-4 SelfHpBelow 0.31 false", !hp.Evaluate(0.31f, 1, 1));
+        Check("G1-2 SelfHpBelow 29% true", hp.Evaluate(29, 100, 1, 1));
+        Check("G1-3 SelfHpBelow 경계 30% false", !hp.Evaluate(30, 100, 1, 1));
+        Check("G1-4 SelfHpBelow 31% false", !hp.Evaluate(31, 100, 1, 1));
 
-        // TurnNumberMod(3,0): turn%3==0
+        // TurnNumberMod(3,0): turn%3==0 (HP 무관, 유효값)
         BehaviorCondition mod = BehaviorCondition.CreateTurnNumberMod(3, 0);
-        Check("G1-5 TurnMod(3,0) turn3 true", mod.Evaluate(1f, 3, 1));
-        Check("G1-6 TurnMod(3,0) turn4 false", !mod.Evaluate(1f, 4, 1));
+        Check("G1-5 TurnMod(3,0) turn3 true", mod.Evaluate(100, 100, 3, 1));
+        Check("G1-6 TurnMod(3,0) turn4 false", !mod.Evaluate(100, 100, 4, 1));
         // 나눗수 0 방어 -> 0 나눗셈 예외 없이 false
-        Check("G1-7 TurnMod(0,0) 나눗수0 false", !BehaviorCondition.CreateTurnNumberMod(0, 0).Evaluate(1f, 3, 1));
+        Check("G1-7 TurnMod(0,0) 나눗수0 false", !BehaviorCondition.CreateTurnNumberMod(0, 0).Evaluate(100, 100, 3, 1));
 
         // TurnNumberAtLeast(5): turn>=5
         BehaviorCondition atLeast = BehaviorCondition.CreateTurnNumberAtLeast(5);
-        Check("G1-8 TurnAtLeast(5) turn5 true", atLeast.Evaluate(1f, 5, 1));
-        Check("G1-9 TurnAtLeast(5) turn4 false", !atLeast.Evaluate(1f, 4, 1));
+        Check("G1-8 TurnAtLeast(5) turn5 true", atLeast.Evaluate(100, 100, 5, 1));
+        Check("G1-9 TurnAtLeast(5) turn4 false", !atLeast.Evaluate(100, 100, 4, 1));
 
         // SurvivingAllyAtLeast(2): 진영 생존수>=2
         BehaviorCondition ally = BehaviorCondition.CreateSurvivingAllyAtLeast(2);
-        Check("G1-10 SurvAlly(2) count2 true", ally.Evaluate(1f, 1, 2));
-        Check("G1-11 SurvAlly(2) count1 false", !ally.Evaluate(1f, 1, 1));
+        Check("G1-10 SurvAlly(2) count2 true", ally.Evaluate(100, 100, 1, 2));
+        Check("G1-11 SurvAlly(2) count1 false", !ally.Evaluate(100, 100, 1, 1));
 
         // 결정론: 같은 입력 반복 -> 같은 결과
-        bool r1 = hp.Evaluate(0.29f, 1, 1);
-        bool r2 = hp.Evaluate(0.29f, 1, 1);
+        bool r1 = hp.Evaluate(29, 100, 1, 1);
+        bool r2 = hp.Evaluate(29, 100, 1, 1);
         Check("G1-12 결정론(반복 동일)", r1 == r2 && r1);
 
         // 패턴 Rules 순서 보존(첫 매치 전제)

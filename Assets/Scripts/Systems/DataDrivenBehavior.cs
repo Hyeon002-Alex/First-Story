@@ -15,7 +15,9 @@ public sealed class DataDrivenBehavior : IEnemyBehavior
     public EnemyIntent Decide(BattleSnapshot snapshot, EnemyUnit self)
     {
         // 조건 primitive 추출
-        float selfHPRatio = self.MaxHP > 0 ? self.CurrHP / (float)self.MaxHP : 0;
+        // HP는 currHP/maxHP를 int 그대로 전달 -> 조건이 정수 교차곱으로 비율 판정
+        int currHP = self.CurrHP;
+        int maxHP = self.MaxHP;
         int turnNum = snapshot.TurnNum;
         // "Ally" = 적 진영 = 적 목록
         // 자신 포함 전체 규모(자신 제외가 필요하면 -1 나중 조정)
@@ -23,7 +25,7 @@ public sealed class DataDrivenBehavior : IEnemyBehavior
 
         foreach (BehaviorRule rule in _pattern.Rules)
         {
-            if (!rule.Condition.Evaluate(selfHPRatio, turnNum, livingAllyCount))
+            if (!rule.Condition.Evaluate(currHP, maxHP, turnNum, livingAllyCount))
                 continue;
 
             SkillData skill = ResolveSkill(self, rule.SkillId);
