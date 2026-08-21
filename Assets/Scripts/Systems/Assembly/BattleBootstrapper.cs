@@ -20,7 +20,9 @@ public static class BattleBootstrapper
 
         List<AllyUnit> allies = new List<AllyUnit>(partyData.Count);
         foreach (AllyUnitData d in partyData)
-        { 
+        {
+            if (d == null)
+                throw new InvalidOperationException($"[{encounter.EncounterId}] 파티에 null 항목");
             allies.Add(new AllyUnit(d));
         }
 
@@ -52,6 +54,8 @@ public static class BattleBootstrapper
             List<EnemyUnit> built = new List<EnemyUnit>(waveEnemies.Count);
             foreach (EnemyUnitData ed in waveEnemies)
             {
+                if (ed == null)
+                    throw new InvalidOperationException($"[{encounter.EncounterId}] 웨이브 {w}에 null 적");
                 if (!registry.ContainsKey(ed.BehaviorPatternId))
                     throw new InvalidOperationException(
                         $"[{encounter.EncounterId}] 적 {ed.EnemyId}의 패턴 '{ed.BehaviorPatternId}'가 인카운터 패턴 목록에 없음");
@@ -75,6 +79,6 @@ public static class BattleBootstrapper
             allies, activeEnemies, intent, protection, executor, waveSystem, behavior);
 
         Debug.Log($"[조립 완료] {encounter.EncounterId}: 아군 {allies.Count} / 웨이브 {waves.Count} / 패턴 {registry.Count}");
-        return new BattleContext(flow, allies, activeEnemies, waveSystem, intent);
+        return new BattleContext(flow, allies, activeEnemies, waveSystem);
     }
 }
