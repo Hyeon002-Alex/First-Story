@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;   // 코루틴 전환
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;  // 프로토타입 로그용. 로직 계산엔 미사용
@@ -15,6 +16,11 @@ public sealed class BattleFlowSystem
     private readonly EnemyBehaviorSystem _behaviorSystem;   // 3단계 적 intent 결정. 더미 대체(G-3)
 
     private int _turnNum;
+
+    // 코루틴 ExecuteTurn은 값을 return하지 못하므로 판정 결과를 여기 담음
+    // 드라이버는 한 턴 펌프 완료 후 이 값을 읽어 계속/종료를 판단
+    // 첫 MoveNext 전 오독 방지 기본값 = Ongoing
+    public BattleOutcome LastOutcome { get; private set; } = BattleOutcome.Ongoing;
 
     public BattleFlowSystem(
         IReadOnlyList<AllyUnit> allies,
@@ -37,8 +43,10 @@ public sealed class BattleFlowSystem
 
     public int TurnNum => _turnNum;
 
-    // 한 글로벌 턴 = 9단계 순차 실행. 판정 결과 반환 -> 상위 루프가 계속/종료 제어
-    public BattleOutcome ExecuteTurn()
+    // 한 글로벌 턴 = 9단계 순차 실행. 코루틴 전환: 값 대신 LastOutcome에 판정 기록
+    // 지금은 구조 전환만. 아직 입력요청을 받지 않음
+    // -> 첫 MoveNext 한 번에 전체 턴이 실행되고 즉시 yield break
+    public IEnumerator ExecuteTurn()
     {
         Step1_TurnStart();
         Step2_RecoverAP();
@@ -48,7 +56,8 @@ public sealed class BattleFlowSystem
         Step6_DefenseResponse();
         Step7_ExecuteBySpeed();      // 골조 — 정렬 1회 + 유효성 재검사
         Step8_TurnEnd();
-        return Step9_Judge();
+        LastOutcome = Step9_Judge();
+        yield break;
     }
 
     // 1. 턴 시작. 턴번호 증가 + 전원 행동완료 플래그 리셋
