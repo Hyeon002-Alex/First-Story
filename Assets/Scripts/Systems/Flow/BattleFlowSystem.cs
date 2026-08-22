@@ -44,8 +44,7 @@ public sealed class BattleFlowSystem
     public int TurnNum => _turnNum;
 
     // 한 글로벌 턴 = 9단계 순차 실행. 코루틴 전환: 값 대신 LastOutcome에 판정 기록
-    // 지금은 구조 전환만. 아직 입력요청을 받지 않음
-    // -> 첫 MoveNext 한 번에 전체 턴이 실행되고 즉시 yield break
+    // 입력 필요 단계는 하위 스텝이 요청을 yield -> 여기서 재-yield로 드라이버에 전달
     public IEnumerator ExecuteTurn()
     {
         Step1_TurnStart();
@@ -53,8 +52,21 @@ public sealed class BattleFlowSystem
         Step3_AssignEnemyIntent();
         Step4_Reveal();
         Step5_InfoResponse();
-        Step6_DefenseResponse();
-        Step7_ExecuteBySpeed();      // 골조 — 정렬 1회 + 유효성 재검사
+
+        // 6. 방어대응: 하위 스텝의 요청을 그대로 밖으로 재-yield
+        IEnumerator defense = Step6_DefenseResponse();
+        while (defense.MoveNext())
+        {
+            yield return defense.Current;
+        }
+
+        // 7. 속도순 행동: 아군 차례마다 행동 요청을 재-yield
+        IEnumerator action = Step7_ExecuteBySpeed();
+        while (action.MoveNext())
+        {
+            yield return action.Current;
+        }
+
         Step8_TurnEnd();
         LastOutcome = Step9_Judge();
         yield break;
@@ -105,13 +117,35 @@ public sealed class BattleFlowSystem
     private void Step5_InfoResponse()
         => Debug.Log("[5 정보대응] 미구현");
 
-    // 6. 방어 대응. 보호 = _protection.SetProtect / 방향방어 = _ally.SetStance(방향, None)
-    // 아군 입력 UI 미구현 -> 실제 선언 소스 없음. 소수 도착 시 여기서 배선
-    private void Step6_DefenseResponse()
-        => Debug.Log("[6 방어대응] 미구현(보호, 방향방어 배선 대기");
+    // 6. 방어 대응. 생존 아군마다 방어대응 요청을 밖으로 내밀고
+    // 드라이버가 채운 응답을 ResponsePhaseSystem이 검중, 적용
+    // void -> IEnumerator: 아군마다 yield return req -> ExecuteTurn이 드라이버에 전달
+    // 응답이 방향방어/보호면 적용, EndTurn/기타 종류는 무시
+    private IEnumerator Step6_DefenseResponse()
+    {
+        foreach (AllyUnit a in _allies)
+        {
+            if (a.IsIncapacitated)
+                continue;   // 전투불능 아군은 대응 요청 대상 아님
 
-    // 7. 속도순 실행. 정렬 1회 + 순서고정, 유효성 재검사 스킵
-    private void Step7_ExecuteBySpeed()
+            InputRequest req = new InputRequest(InputPhase.Defense, a);
+            yield return req;   // 드라이버가 req.SetResponse로 응답 슬롯을 채운 뒤 재개
+
+            if (!req.IsAnswered)
+                continue;   // 드라이버 무응답 방어. 정상 펌프는 항상 채움
+
+            ActionCommand response = req.Response;
+            // 방어대응 유효 종류만 적용. 집합 판정은 ResponsePhaseSystem 단일 소유
+            // EndTurn = 대응 포기. 그 외 부적격 종류는 IsResponseKind가 걸러 무시
+            if (ResponsePhaseSystem.IsResponseKind(response.Kind))
+                ResponsePhaseSystem.TryApply(response, _protection);
+        }
+    }
+
+    // 7. 속도순 실행. 정렬 1회 + 순서고정, 유효성 재검사
+    // void -> IEnumerator: 아군 차례에 행동 요청을 yield -> 드라이버 응답을 진행
+    // 적 차례는 intent에서 명령을 즉시 만들어 왕복 없이 실행
+    private IEnumerator Step7_ExecuteBySpeed()
     {
         List<BattleUnit> order = BuildOrder();
         Debug.Log($"[7 정렬] {string.Join(" > ", order.Select(u => $"{UnitId(u)}(속{u.EffectiveSpeed})"))}");
@@ -125,10 +159,24 @@ public sealed class BattleFlowSystem
                 continue;
             }
 
-            // 적: intent / 아군: 입력 미구현
-            ActionCommand command = BuildCommand(actor);
-            if (command == null)
-                continue;
+            ActionCommand command;
+            if (actor is AllyUnit ally)
+            {
+                // 아군: 행동단계 요청을 밖으로 내밀고 드라이버 응답을 명령으로 사용
+                InputRequest req = new InputRequest(InputPhase.Action, ally);
+                yield return req;   // 드라이버가 req.SetResponse로 채운 뒤 재개
+
+                if (!req.IsAnswered)
+                    continue;       // 무응답 방어. 정상 펌프는 항상 채움
+                command = req.Response;
+            }
+            else
+            { 
+                // 적: intent -> 명령. null이면 명령 없음
+                command = BuildCommand((EnemyUnit)actor);
+                if (command == null)
+                    continue;
+            }
 
             _executor.Execute(command, _turnNum);
             actor.SetActed(true);
@@ -250,6 +298,12 @@ public sealed class BattleFlowSystem
             reason = "전투불능";
             return false;
         }
+        // 6단계 방어대응으로 이미 행동한 아군은 속도순 행동 스킵
+        if (actor.ActedThisTurn)
+        {
+            reason = "대응행동 완료";
+            return false;
+        }
         if (actor is EnemyUnit enemy)
         {
             // 붕괴 행동취소: intent 무효 표시된 적은 스킵
@@ -274,21 +328,15 @@ public sealed class BattleFlowSystem
         reason = null;
         return true;
     }
-    // 행위자 -> 이번 차례 명령서. 적 = intent 반환, 아군 = 입력 미구현
-    // 적 분기의 intent 비null은 IsStillValid 선행 통과에 의존하는 숨은 선행조검
-    // -> 순서 뒤바뀜 대비 재확인. null이면 명령서 없음 처리
-    private ActionCommand BuildCommand(BattleUnit actor)
+    // 행위자 -> 이번 차례 명령서. 적 전용: intent -> 스킬 명령
+    // 아군 분기 제거: 아군 행동은 스텝7이 InputRequest 왕복으로 직접 처리. BuildCommand 미경유
+    // intent 비null은 IsStillVaild 선행 통과에 의존하는 숨은 선행조건 -> 순서역전 대비 재확인
+    private ActionCommand BuildCommand(EnemyUnit enemy)
     {
-        if (actor is EnemyUnit enemy)
-        {
-            EnemyIntent intent = _intentSystem.GetIntent(enemy);
-            if(intent == null)
-                return null;    // IsStillValid가 이미 걸러야 정상. 순서 역전 대비 방어
-            return ActionCommand.CreateSkill(enemy, intent.Skill, intent.Target);
-        }
-        if (actor is AllyUnit ally)
-            return ActionCommand.CreateEndTurn(ally);   // 입력 대기. 미구현. 골격은 자동 차례종료
-        return null;
+        EnemyIntent intent = _intentSystem.GetIntent(enemy);
+        if (intent == null)
+            return null;    // IsStillValid가 이미 걸러야 정상. 순서 역전 대비 방어
+        return ActionCommand.CreateSkill(enemy, intent.Skill, intent.Target);
     }
 
     // 전체 유닛. 스텝1 플래그 리셋용

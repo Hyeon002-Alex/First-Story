@@ -11,6 +11,12 @@ public static class ResponsePhaseSystem
     private static readonly int _defenseAPCost = 1;
     private static readonly int _protectionAPCost = 1;
 
+    // 이 종류가 방어대응단계 소관인가. "유효 종류 집합"의 단일 소유
+    // 스텝6 라우팅과 TryApply의 switch가 같은 집합을 봐야 함
+    // 샹후 방어대응가능 스킬(도발 등) 추가 시 이 메서드와 아래 switch만 함께 확장
+    public static bool IsResponseKind(ActionKind kind)
+        => kind == ActionKind.Defense || kind == ActionKind.Protection;
+
     // 대응 명령 1건 검증, 적용. 적용 true / AP부족, 대상무효 거부 false
     // 명령의 형태는 ActionCommand 팩토리가 이미 보증
     // 여기선 런타임 상태만 게이트함

@@ -1,5 +1,4 @@
 ﻿using System;
-using UnityEngine.UIElements;
 
 // 피해, 회복, 보호막 순수 계산. 상태 없음. HP 건드리지 않음. UnityEngine 미의존
 // 예상=실제의 열쇠: 미리보기도 실제도 이 함수를 똑같이 호출
