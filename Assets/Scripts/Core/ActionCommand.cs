@@ -31,9 +31,6 @@ public sealed class ActionCommand
     public static ActionCommand CreateProtection(BattleUnit actor, BattleUnit target)
         => new ActionCommand(ActionKind.Protection, RequireActor(actor),
                 target ?? throw new ArgumentNullException(nameof(target)), null, AttackDirection.None);
-    public static ActionCommand CreateReveal(BattleUnit actor, BattleUnit target)
-         => new ActionCommand(ActionKind.Reveal, RequireActor(actor),
-                target ?? throw new ArgumentNullException(nameof(target)), null, AttackDirection.None);
 
     // === 실행행동 === //
     // 스킬계열: actor, skill 필수. target은 대상 파이프 몫이라 막지 않음

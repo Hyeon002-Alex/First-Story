@@ -31,6 +31,8 @@ public sealed class SkillData : ScriptableObject
     // 정보 확인 속성
     [SerializeField] private bool _isUnavoidable;       // 회피불가
 
+    [SerializeField] private bool _isInfoAction;        // 정보형 고유행동 자격
+
     public string SkillId => _skillId;
     public string DisplayName => _displayName;
     public int ApCost => _apCost;
@@ -46,4 +48,5 @@ public sealed class SkillData : ScriptableObject
     public IReadOnlyList<StatusEffectData> Effects => _effects;  // 읽기전용 목록 -> 밖에서 Add/Remove 못 함
     public bool CleansesNormalStatus => _cleansesNormalStatus;
     public bool IsUnavoidable => _isUnavoidable;
+    public bool IsInfoAction => _isInfoAction;
 }

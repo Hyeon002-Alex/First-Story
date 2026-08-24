@@ -51,7 +51,13 @@ public sealed class BattleFlowSystem
         Step2_RecoverAP();
         Step3_AssignEnemyIntent();
         Step4_Reveal();
-        Step5_InfoResponse();
+
+        // 5. 정보대응: 하위 스텝의 요청을 그대로 밖으로 재-yield
+        IEnumerator info = Step5_InfoResponse();
+        while (info.MoveNext())
+        { 
+            yield return info.Current;
+        }
 
         // 6. 방어대응: 하위 스텝의 요청을 그대로 밖으로 재-yield
         IEnumerator defense = Step6_DefenseResponse();
@@ -113,9 +119,29 @@ public sealed class BattleFlowSystem
             Debug.Log($"[4 공개] {pair.Key.EnemyId}: 방향 {pair.Value.Skill.Direction} 대상 {UnitId(pair.Value.Target)}");
     }
 
-    // 5. 정보 대응
-    private void Step5_InfoResponse()
-        => Debug.Log("[5 정보대응] 미구현");
+    // 5. 정보 대응. 생존 아군마다 정보대응 요청을 밖으로 내밀고
+    // 드라이버가 채운 응답이 정보형 고유행동이면 InfoResponseSystem이 검증, 적용
+    // void IEnumerator: 아군마다 yield return req -> ExecuteTurn이 드라이버에 전달
+    // 정보대응은 방어 전. EndTurn/부적격 종류는 무시(정보 대응 포기)
+    private IEnumerator Step5_InfoResponse()
+    {
+        foreach (AllyUnit a in _allies)
+        {
+            if (a.IsIncapacitated)
+                continue;   // 전투불능 아군은 대응 요청 대상 아님
+
+            InputRequest req = new InputRequest(InputPhase.Info, a);
+            yield return req;   // 드라이버가 req.SetResponse로 응답 슬롯을 채운 뒤 재개
+
+            if (!req.IsAnswered)
+                continue;   // 드라이버 무응답 방어. 정상 펌프는 항상 채움
+
+            ActionCommand response = req.Response;
+            // 정보형 고유행동만 적용. 집합 판정은 InfoResponseSystem 단일 소유
+            if (InfoResponseSystem.IsInfoResponse(response))
+                InfoResponseSystem.TryApply(response, _intentSystem);
+        }
+    }
 
     // 6. 방어 대응. 생존 아군마다 방어대응 요청을 밖으로 내밀고
     // 드라이버가 채운 응답을 ResponsePhaseSystem이 검중, 적용
@@ -125,8 +151,8 @@ public sealed class BattleFlowSystem
     {
         foreach (AllyUnit a in _allies)
         {
-            if (a.IsIncapacitated)
-                continue;   // 전투불능 아군은 대응 요청 대상 아님
+            if (a.IsIncapacitated || a.ActedThisTurn)
+                continue;   // 전투불능 또는 정보대응으로 이미 행동한 아군은 대응 대상 아님
 
             InputRequest req = new InputRequest(InputPhase.Defense, a);
             yield return req;   // 드라이버가 req.SetResponse로 응답 슬롯을 채운 뒤 재개
