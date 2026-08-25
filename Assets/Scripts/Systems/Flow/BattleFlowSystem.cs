@@ -309,8 +309,9 @@ public sealed class BattleFlowSystem
         participants.AddRange(_allies);
         participants.AddRange( _enemies);
 
+        // tuple 요소명 밍시화
         return participants
-            .Select((unit, slotIndex) => (unit, slotIndex))
+            .Select((unit, slotIndex) => (unit: unit, slotIndex: slotIndex))
             .OrderByDescending(x => x.unit.EffectiveSpeed)
             .ThenBy(x => x.slotIndex)
             .Select(x => x.unit)

@@ -46,6 +46,11 @@ public static class InfoResponseSystem
             return false;
         }
 
+        // 공개 게이트 ON + AP 소모 + 행동 소진
+        intentSystem.SetRevealed(enemy);
+        APSystem.Consume(ally, apCost);
+        ally.SetActed(true);
+
         // 캐릭터 스킬 설계 후 수렴: 정보형 고유행동의 공격 동반 효과는 여기서 실행 안 함
         // 공격 겸용 확정 시 ActionResolver 경로를 이 지점에 연결
         Debug.Log($"[정보대응] {ally.UnitId} 정보확인 -> {enemy.EnemyId} (AP {ally.CurrAP})");
