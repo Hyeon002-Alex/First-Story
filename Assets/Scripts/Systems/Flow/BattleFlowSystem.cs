@@ -158,7 +158,11 @@ public sealed class BattleFlowSystem
             ActionCommand response = req.Response;
             // 정보형 고유행동만 적용. 집합 판정은 InfoResponseSystem 단일 소유
             if (InfoResponseSystem.IsInfoResponse(response))
-                InfoResponseSystem.TryApply(response, _intentSystem);
+            {
+                // 검증 + 공개/AP/행동소진 적용. 성공 시에만 실행(공격 겸용)
+                if (InfoResponseSystem.TryApply(response, _intentSystem))
+                    _executor.Execute(response, _turnNum);
+            }
         }
     }
 

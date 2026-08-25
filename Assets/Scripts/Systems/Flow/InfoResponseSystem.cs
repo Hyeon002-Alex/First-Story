@@ -55,8 +55,8 @@ public static class InfoResponseSystem
         APSystem.Consume(ally, apCost);
         ally.SetActed(true);
 
-        // 캐릭터 스킬 설계 후 수렴: 정보형 고유행동의 공격 동반 효과는 여기서 실행 안 함
-        // 공격 겸용 확정 시 ActionResolver 경로를 이 지점에 연결
+        // 캐릭터 스킬 설계 후 수렴: 공격 겸용 확정. 실행(ActionResolver.Execute)은 여기 아님
+        // -> Step5_InfoResponse가 이 메서드 성공 후 executor로 직접 호출
         Debug.Log($"[정보대응] {ally.UnitId} 정보확인 -> {enemy.EnemyId} (AP {ally.CurrAP})");
         return true;
     }

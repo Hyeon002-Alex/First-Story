@@ -128,9 +128,13 @@ public static class JProbe
         var infoSkill2 = Skill("info2", 2, true);
 
         var flow = (BattleFlowSystem)FormatterServices.GetUninitializedObject(typeof(BattleFlowSystem));
+        var flowProtection = new ProtectionSystem();
         Set(flow, "_allies", alliesList);
         Set(flow, "_intentSystem", flowIntent);
-        Set(flow, "_protection", new ProtectionSystem());
+        Set(flow, "_protection", flowProtection);
+        // L-3: Step5_InfoResponse가 정보형 공격겸용 실행에 executor를 씀. ActionResolver는 같은 protection 인스턴스 공유(실제 조립과 동일)
+        Set(flow, "_executor",
+            new ActionResolver(alliesList, new List<EnemyUnit> { targetEnemy }, flowProtection, flowIntent));
 
         // Step5 펌프
         var step5m = typeof(BattleFlowSystem).GetMethod("Step5_InfoResponse", BindingFlags.NonPublic | BindingFlags.Instance);
