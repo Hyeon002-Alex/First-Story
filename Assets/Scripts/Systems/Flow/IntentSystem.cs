@@ -41,6 +41,28 @@ public sealed class IntentSystem
     // Dictionary 열거 순서 비보장 -> 순서 의존 결정 금지. 순서 필요 시 _enemies 슬롯 인덱스로 정렬
     public IReadOnlyDictionary<EnemyUnit, EnemyIntent> AllIntents => _intents;
 
+    // === 정보 조회 뷰 === //
+    // intent의 읽기 전용 투영 반환. reveal 게이트로 공개 수준 분기
+    // 미등록 적은 null. 결정론 순서는 호출자가 슬롯순 유닛으로 순회
+    // 게이트 판정을 이 한 곳에 집중: 무엇이 언제 보이는가 단일 소유
+    public IntentView GetView(EnemyUnit enemy)
+    { 
+        EnemyIntent intent = GetIntent(enemy);
+        if (intent == null)
+            return null;
+
+        SkillData skill = intent.Skill;
+        if (IsRevealed(enemy))
+            return IntentView.Full(
+                intent.Target, skill.Direction,
+                skill.DisplayName, skill.Effects, skill.IsUnavoidable);
+
+        return IntentView.Basic(intent.Target, skill.Direction);
+        {
+            
+        }
+    }
+
     // === 정보확인 플래그 === //
     public bool IsRevealed(EnemyUnit enemy) => _revealed.Contains(enemy);
     // 정보확인(Reveal) 실행 시 켬. 데이터는 안 바뀌고 공개 수준만 오름

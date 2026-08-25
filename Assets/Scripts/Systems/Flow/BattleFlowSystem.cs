@@ -112,11 +112,30 @@ public sealed class BattleFlowSystem
         _behaviorSystem.DecideAll(snapshot);
     }
 
-    // 4. 공개. UI 후순위. 골격은 대상, 방향만 읽어 로그
+    // 4. 공개. reveal 게이트된 IntentView를 소비해 공개 수준별로 로그
+    // 순회는 _enemies 슬롯 순서
+    // 확인 전엔 대상/방향만. 정보확인된 적은 행동명/부가효과/회피불가까지 공개
     private void Step4_Reveal()
     {
-        foreach (var pair in _intentSystem.AllIntents)
-            Debug.Log($"[4 공개] {pair.Key.EnemyId}: 방향 {pair.Value.Skill.Direction} 대상 {UnitId(pair.Value.Target)}");
+        foreach (EnemyUnit enemy in _enemies)
+        { 
+            IntentView view = _intentSystem.GetView(enemy);
+            if (view == null)
+                continue;   // intent 없는 적(미등록/비대상) 스킵
+
+            if (view.IsRevealed)
+            {
+                string effects = view.Effects.Count > 0
+                    ? string.Join(", ", view.Effects.Select(e => e.StatusId))
+                    : "없음";
+                Debug.Log($"[4 공개/확인] {enemy.EnemyId}: {view.DisplayName} 방향 {view.Direction}" +
+                    $" 대상 {UnitId(view.Target)} 부가효과 {effects} 회피불가 {view.IsUnavoidable}");
+            }
+            else
+            {
+                Debug.Log($"[4 공개/기본] {enemy.EnemyId}: 방향 {view.Direction} 대상 {UnitId(view.Target)}");
+            }
+        }
     }
 
     // 5. 정보 대응. 생존 아군마다 정보대응 요청을 밖으로 내밀고
