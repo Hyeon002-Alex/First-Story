@@ -45,6 +45,19 @@ public sealed class ActionChoice
             ActionKind.UniqueAction, skill ?? throw new ArgumentNullException(nameof(skill)),
             AttackDirection.None, apCost, RequireTargets(enemyTargets));
 
+    // 고유행동(비정보형). 속도순 행동 단계 전용. Kind는 InfoAction과 같은 UniqueAction이지만
+    // 통로를 나눠 호출부에서 위상 혼동을 방지
+    public static ActionChoice UniqueAction(SkillData skill, int apCost, IReadOnlyList<BattleUnit> targets)
+         => new ActionChoice(
+            ActionKind.UniqueAction, skill ?? throw new ArgumentNullException(nameof(skill)),
+            AttackDirection.None, apCost, RequireTargets(targets));
+
+    // 편성 스킬 1개. 대상 후보는 스킬의 TargetRule/TargetSide 해석 결과
+    public static ActionChoice EquippedSkill(SkillData skill, int apCost, IReadOnlyList<BattleUnit> targets)
+        => new ActionChoice(
+            ActionKind.Skill, skill ?? throw new ArgumentNullException(nameof(skill)),
+            AttackDirection.None, apCost, RequireTargets(targets));
+
     // 차례종료(포기). 전 위상 공통. 대상 없음, 비용 0
     public static ActionChoice EndTurn()
         => new ActionChoice(

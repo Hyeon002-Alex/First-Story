@@ -78,20 +78,46 @@ public static class ChoiceQuerySystem
                 list.Add(ActionChoice.Protection(protectionCost, allyTargets));
         }
 
-        // [target-side 확정 후 수렴] 방어대응 가능 스킬(도발 등)은 데이터·진영 미정 -> 자리
+        // 방어대응가능 자격 플래그 확정 후 수렴
+        // 도발류는 SkillData 자격 플래그가 아직 없어 보류
         return list;
     }
 
-    // 속도순 행동: 고유행동(공격형)/편성스킬/아이템/차례종료
-    // 스킬 대상 산출 보류
-    // -> TargetRule은 단일/범위/자신 만 담고 어느 진영인지는 데이터에 없음
-    // 실행은 명령의 Target 진영을 따라가면 되지만, 오퍼는 대상 미선택 상태라 진영을 알아야 함
-    // [Action seam 수렴] 공격 오퍼의 대상별 예상피해(ActionResolver.PreviewDamage)는
-    // 공격 오퍼가 생기는 시점(Action 위상 스킬 대상 산출 수렴)에 함께 부착.
-    // K-3은 예상=실제 불변식만 확정, 부착 대상(공격 오퍼)이 없어 필드 미노출(M1)
+    // 속도순 행동: 고유행동(공격형)/편성스킬 3개. 아이템은 아직 미구현, 차례종료는 공통 경로
+    // 대상 진영은 skill.TargetSide로 풀을 고르고 GetValidTargets로 규칙 전용
     private static List<ActionChoice> ActionChoices(AllyUnit ally, BattleSnapshot snapshot)
     {
-        return new List<ActionChoice>();   // 현재 위상 산출 = 차례종료(공통 경로가 추가)뿐
+        var list = new List<ActionChoice>();
+
+        // 고유행동: 정보형은 5단계 소관. InfoChoices가 이미 산출. 여기선 제외
+        SkillData unique = ally.UniqueAction;
+        if(!InfoResponseSystem.IsInfoActionSkill(unique))
+            TryAddSkillChoice(list, ally, unique, snapshot, isUnique: true);
+
+        // 편성 스킬 3개
+        foreach (SkillData skill in ally.EquippedSkills)
+        { 
+            TryAddSkillChoice(list, ally, skill, snapshot, isUnique: false);
+        }
+
+        return list;
+    }
+
+    // 스킬 1개를 검증해 오퍼로 추가. null/AP부족/후보0이면 오퍼 자체를 생략
+    private static void TryAddSkillChoice(
+        List<ActionChoice> list, AllyUnit ally, SkillData skill, BattleSnapshot snapshot, bool isUnique)
+    {
+        if (skill == null || !APSystem.CanAfford(ally, skill.ApCost))
+            return;
+
+        List<BattleUnit> pool = SidePool(skill.TargetSide, snapshot);
+        IReadOnlyList<BattleUnit> targets = GetValidTargets(ally, skill.TargetRule, pool);
+        if (targets.Count == 0)
+            return;
+
+        list.Add(isUnique
+            ? ActionChoice.UniqueAction(skill, skill.ApCost, targets)
+            : ActionChoice.EquippedSkill(skill, skill.ApCost, targets));
     }
 
     // === 대상 규칙 해소 === //
@@ -120,6 +146,16 @@ public static class ChoiceQuerySystem
     private static List<BattleUnit> LivingEnemyPool(BattleSnapshot snapshot)
         => snapshot.LivingEnemies.Cast<BattleUnit>().ToList();
 
+    // 보호 전용(자기보호 금지). Friendly/Single 스킬(회복 등)엔 쓰지 않음 -> 아래 자기포함 오버로드를 씀
     private static List<BattleUnit> LivingAllyPool(BattleSnapshot snapshot, AllyUnit exclude)
         => snapshot.LivingAllies.Where(a => !ReferenceEquals(a, exclude)).Cast<BattleUnit>().ToList();
+
+    // 자기 포함. 회복/정화 등 Friendly 스킬은 행동자 자신도 유효 대상
+    private static List<BattleUnit> LivingAllyPool(BattleSnapshot snapshot)
+        => snapshot.LivingAllies.Cast<BattleUnit>().ToList();
+
+    // TargetSide -> 실제 진영 pool. ChoiceQuerySystem은 아군 행동자만 다뤄 매핑이 고정됨
+    // 적 AI가 SkillData를 재사용할 때의 행동자 기준 상대 해석은 별도 소관. 여기선 아군 -> 적/아군 뿐
+    private static List<BattleUnit> SidePool(TargetSide side, BattleSnapshot snapshot)
+        => side == TargetSide.Friendly ? LivingAllyPool(snapshot) : LivingEnemyPool(snapshot);
 }

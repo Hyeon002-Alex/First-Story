@@ -23,6 +23,7 @@ public sealed class SkillData : ScriptableObject
 
     // 대상
     [SerializeField] private TargetRule _targetRule;
+    [SerializeField] private TargetSide _targetSide;    // 행동자 기준 대상의 진영. Self 규칙일 땐 무시
 
     // 부여할 상태이상. StatusEffectData 직접 참조로 전환
     [SerializeField] private List<StatusEffectData> _effects = new List<StatusEffectData>();   // 부여할 상태이상 Id
@@ -45,6 +46,7 @@ public sealed class SkillData : ScriptableObject
     public int BreakAmount => _breakAmount;
     public AttackDirection Direction => _direction;
     public TargetRule TargetRule => _targetRule;
+    public TargetSide TargetSide => _targetSide;
     public IReadOnlyList<StatusEffectData> Effects => _effects;  // 읽기전용 목록 -> 밖에서 Add/Remove 못 함
     public bool CleansesNormalStatus => _cleansesNormalStatus;
     public bool IsUnavoidable => _isUnavoidable;
