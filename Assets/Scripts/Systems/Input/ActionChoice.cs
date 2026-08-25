@@ -13,16 +13,24 @@ public sealed class ActionChoice
     // 지정 가능한 대상 후보. 사용자가 이 중 하나를 고름
     // 대상 없는 행동은 빈 목록
     public IReadOnlyList<BattleUnit> ValidTargets { get; }
+    // 대상별 무방어 예상피해. ActionResolver.PreviedDamage와 동일 경로 -> 예상=실제 보장
+    // 피해 없는 스킬/대응행동은 빈 목록
+    public IReadOnlyDictionary<BattleUnit, DamageResult> PreviewDamages { get; }
+    
+    private static readonly Dictionary<BattleUnit, DamageResult> NoPreview
+        = new Dictionary<BattleUnit, DamageResult>();
 
     private ActionChoice(
         ActionKind kind, SkillData skill, AttackDirection direction,
-        int apCost, IReadOnlyList<BattleUnit> validTargets)
+        int apCost, IReadOnlyList<BattleUnit> validTargets,
+        IReadOnlyDictionary<BattleUnit, DamageResult> previewDamages)
     {
         Kind = kind;
         Skill = skill;
         Direction = direction;
         ApCost = apCost;
         ValidTargets = validTargets;
+        PreviewDamages = previewDamages;
     }
 
     // 방향방어 1방향. 대상 없음
@@ -31,37 +39,42 @@ public sealed class ActionChoice
         if (direction == AttackDirection.None)
             throw new ArgumentException("방향방어는 High/Mid/Low만", nameof(direction));
         return new ActionChoice(
-            ActionKind.Defense, null, direction, apCost, Array.Empty<BattleUnit>());
+            ActionKind.Defense, null, direction, apCost, Array.Empty<BattleUnit>(), NoPreview);
     }
 
     // 보호. 대상 = 지킬 아군 후보
     public static ActionChoice Protection(int apCost, IReadOnlyList<BattleUnit> allyTargets)
         => new ActionChoice(
-            ActionKind.Protection, null, AttackDirection.None, apCost, RequireTargets(allyTargets));
+            ActionKind.Protection, null, AttackDirection.None, apCost, RequireTargets(allyTargets), NoPreview);
 
-    // 정보형 고유행동. 대상 = 정보확인할 적 후보
+    // 정보형 고유행동. 대상 = 정보확인할 적 후보. 예상피해는 이 통로엔 아직 안 붙임
     public static ActionChoice InfoAction(SkillData skill, int apCost, IReadOnlyList<BattleUnit> enemyTargets)
         => new ActionChoice(
             ActionKind.UniqueAction, skill ?? throw new ArgumentNullException(nameof(skill)),
-            AttackDirection.None, apCost, RequireTargets(enemyTargets));
+            AttackDirection.None, apCost, RequireTargets(enemyTargets), NoPreview);
 
     // 고유행동(비정보형). 속도순 행동 단계 전용. Kind는 InfoAction과 같은 UniqueAction이지만
     // 통로를 나눠 호출부에서 위상 혼동을 방지
-    public static ActionChoice UniqueAction(SkillData skill, int apCost, IReadOnlyList<BattleUnit> targets)
+    // previewDamages: 호출부가 HasDamage 게이팅 후 넘김
+    public static ActionChoice UniqueAction(
+        SkillData skill, int apCost, IReadOnlyList<BattleUnit> targets,
+        IReadOnlyDictionary<BattleUnit, DamageResult> previewDamages)
          => new ActionChoice(
             ActionKind.UniqueAction, skill ?? throw new ArgumentNullException(nameof(skill)),
-            AttackDirection.None, apCost, RequireTargets(targets));
+            AttackDirection.None, apCost, RequireTargets(targets), previewDamages ?? NoPreview);
 
     // 편성 스킬 1개. 대상 후보는 스킬의 TargetRule/TargetSide 해석 결과
-    public static ActionChoice EquippedSkill(SkillData skill, int apCost, IReadOnlyList<BattleUnit> targets)
+    public static ActionChoice EquippedSkill(
+        SkillData skill, int apCost, IReadOnlyList<BattleUnit> targets,
+        IReadOnlyDictionary<BattleUnit, DamageResult> previewDamages)
         => new ActionChoice(
             ActionKind.Skill, skill ?? throw new ArgumentNullException(nameof(skill)),
-            AttackDirection.None, apCost, RequireTargets(targets));
+            AttackDirection.None, apCost, RequireTargets(targets), previewDamages ?? NoPreview);
 
     // 차례종료(포기). 전 위상 공통. 대상 없음, 비용 0
     public static ActionChoice EndTurn()
         => new ActionChoice(
-            ActionKind.EndTurn, null, AttackDirection.None, 0, Array.Empty<BattleUnit>());
+            ActionKind.EndTurn, null, AttackDirection.None, 0, Array.Empty<BattleUnit>(), NoPreview);
 
     // 대상 필수 오퍼의 후보 0 방어. 후보 0이면 호출 측이 오퍼를 만들지 말았어야 함
     private static IReadOnlyList<BattleUnit> RequireTargets(IReadOnlyList<BattleUnit> targets)

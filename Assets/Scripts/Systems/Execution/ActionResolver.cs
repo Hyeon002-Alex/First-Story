@@ -131,7 +131,8 @@ public sealed class ActionResolver : IActionExecutor
 
     // === 피해 계산 단일 경로 === //
     // 미리보기와 실제가 똑같이 이걸 호출
-    private DamageResult ComputeDamage(BattleUnit actor, BattleUnit target, SkillData skill)
+    // ChoiceQuerySystem 처럼 ActionResolver 인스턴스가 없는 순수 조회 쪽에서도 호출해야 하기 때문에 static
+    private static DamageResult ComputeDamage(BattleUnit actor, BattleUnit target, SkillData skill)
     {
         // 6. 방향 배율: 대상의 실제 방어 자세 조회. 자세 없으면 None -> 1.00
         float directionMod = DirectionSystem.GetMod(skill.Direction, target.GetDefenseStance());
@@ -147,7 +148,7 @@ public sealed class ActionResolver : IActionExecutor
     }
 
     // 미리보기: 실제와 동일 계산. 적용만 안함. UI 예상피해 표시가 이걸 호출
-    public DamageResult PreviewDamage(BattleUnit actor, BattleUnit target, SkillData skill)
+    public static DamageResult PreviewDamage(BattleUnit actor, BattleUnit target, SkillData skill)
     {
         if (actor == null) 
             throw new ArgumentNullException(nameof(actor));
@@ -160,7 +161,8 @@ public sealed class ActionResolver : IActionExecutor
     }
 
     // === wide SkillData 효과 유무(구조 부채: 한 스킬이 피해/회복/보호막 복수 보유 가능) === //
-    private static bool HasDamage(SkillData s) => s.DamageCoeffi != 0f || s.FixedDamage != 0;
+    // HaseDamage만 public: ChoiceQuerySystem이 예상피해 부착 여부 게이팅에 사용. 복제 대신 단일 소유 재사용
+    public static bool HasDamage(SkillData s) => s.DamageCoeffi != 0f || s.FixedDamage != 0;
     private static bool HasHealing(SkillData s) => s.HealingCoeffi != 0f || s.FixedHealing != 0;
     private static bool HasShield(SkillData s) => s.ShieldCoeffi != 0f || s.FixedShield != 0;
 

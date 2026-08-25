@@ -115,10 +115,27 @@ public static class ChoiceQuerySystem
         if (targets.Count == 0)
             return;
 
+        IReadOnlyDictionary<BattleUnit, DamageResult> preview = PreviewFor(ally, skill, targets);
+
         list.Add(isUnique
-            ? ActionChoice.UniqueAction(skill, skill.ApCost, targets)
-            : ActionChoice.EquippedSkill(skill, skill.ApCost, targets));
+            ? ActionChoice.UniqueAction(skill, skill.ApCost, targets, preview)
+            : ActionChoice.EquippedSkill(skill, skill.ApCost, targets, preview));
     }
+
+    private static IReadOnlyDictionary<BattleUnit, DamageResult> PreviewFor(
+        AllyUnit actor, SkillData skill, IReadOnlyList<BattleUnit> targets)
+    {
+        if (!ActionResolver.HasDamage(skill))
+            return EmptyPreview;
+
+        var preview = new Dictionary<BattleUnit, DamageResult>();
+        foreach (BattleUnit target in targets)
+            preview[target] = ActionResolver.PreviewDamage(actor, target, skill);
+        return preview;
+    }
+
+    private static readonly IReadOnlyDictionary<BattleUnit, DamageResult> EmptyPreview
+        = new Dictionary<BattleUnit, DamageResult>();
 
     // === 대상 규칙 해소 === //
     // 규칙별 지정대상 후보 산출. pool = 겨냥 진영의 생존 유닛(호출자가 진영 결정해 주입)
