@@ -6,12 +6,16 @@ using UnityEngine;
 // 정보형 고유행동 = UniqueAction + SkillData.IsInfoAction
 public static class InfoResponseSystem
 {
+    // 정보형 스킬 자격 단일 소유: 이 플래그가 정보형 대응 자격의 진실원
+    // 제안과 집행이 같은 기준을 여기서 읽어 드리프트 차단
+    public static bool IsInfoActionSkill(SkillData skill)
+        => skill != null && skill.IsInfoAction;
+
     // 이 명령이 정보대응 단계 소관인가
     public static bool IsInfoResponse(ActionCommand command)
         => command != null
         && command.Kind == ActionKind.UniqueAction
-        && command.Skill != null
-        && command.Skill.IsInfoAction;
+        && IsInfoActionSkill(command.Skill);
 
     // 정보형 고유행동 1건 검증, 적용. 적용 true / AP부족, 대상무효 false
     // intentSystem 주입: 공개 플래그인 _reavealed는 IntentSystem이 소유

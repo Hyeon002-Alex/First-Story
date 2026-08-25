@@ -40,9 +40,9 @@ public static class ChoiceQuerySystem
         var list = new List<ActionChoice>();
 
         SkillData unique = ally.UniqueAction;
-        // 정보형 고유행동 자격 = UniqueAction + IsInfoAction. 집합 판정은 InfoResponseSystem이 소유하나
-        // 여긴 명령이 아닌 스킬만 있어 스킬 플래그로 직접 확인(같은 기준: Kind는 오퍼 생성 시 UniqueAction 고정)
-        if (unique != null && unique.IsInfoAction && APSystem.CanAfford(ally, unique.ApCost))
+        // 정보형 자격 찬정은 InfoResponseSystem이 단일 소유. 제안/집행 기준 일원화
+        // 오퍼 Kind는 UniqueAction 고정
+        if (InfoResponseSystem.IsInfoActionSkill(unique) && APSystem.CanAfford(ally, unique.ApCost))
         {
             // 정보확인 대상 진영 = 적(자명). 규칙 해소로 후보 산출
             IReadOnlyList<BattleUnit> targets =
@@ -86,6 +86,9 @@ public static class ChoiceQuerySystem
     // 스킬 대상 산출 보류
     // -> TargetRule은 단일/범위/자신 만 담고 어느 진영인지는 데이터에 없음
     // 실행은 명령의 Target 진영을 따라가면 되지만, 오퍼는 대상 미선택 상태라 진영을 알아야 함
+    // [Action seam 수렴] 공격 오퍼의 대상별 예상피해(ActionResolver.PreviewDamage)는
+    // 공격 오퍼가 생기는 시점(Action 위상 스킬 대상 산출 수렴)에 함께 부착.
+    // K-3은 예상=실제 불변식만 확정, 부착 대상(공격 오퍼)이 없어 필드 미노출(M1)
     private static List<ActionChoice> ActionChoices(AllyUnit ally, BattleSnapshot snapshot)
     {
         return new List<ActionChoice>();   // 현재 위상 산출 = 차례종료(공통 경로가 추가)뿐

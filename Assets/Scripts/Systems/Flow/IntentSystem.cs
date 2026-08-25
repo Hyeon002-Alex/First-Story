@@ -37,10 +37,6 @@ public sealed class IntentSystem
     public EnemyIntent GetIntent(EnemyUnit enemy)
         =>_intents.TryGetValue(enemy, out EnemyIntent intent) ? intent : null;
 
-    // 대응단계, UI가 살아있는 모든 적 intent를 훑는 통로. 읽기 전용 노출
-    // Dictionary 열거 순서 비보장 -> 순서 의존 결정 금지. 순서 필요 시 _enemies 슬롯 인덱스로 정렬
-    public IReadOnlyDictionary<EnemyUnit, EnemyIntent> AllIntents => _intents;
-
     // === 정보 조회 뷰 === //
     // intent의 읽기 전용 투영 반환. reveal 게이트로 공개 수준 분기
     // 미등록 적은 null. 결정론 순서는 호출자가 슬롯순 유닛으로 순회
