@@ -11,6 +11,10 @@ public static class ResponsePhaseSystem
     private static readonly int _defenseAPCost = 1;
     private static readonly int _protectionAPCost = 1;
 
+    // 비용 읽기 노출: 선택지 산출이 이 값을 복제하지 않고 이 단일 소유를 읽음
+    public static int DefenseAPCost => _defenseAPCost;
+    public static int ProtectionAPCost => _protectionAPCost;
+
     // 이 종류가 방어대응단계 소관인가. "유효 종류 집합"의 단일 소유
     // 스텝6 라우팅과 TryApply의 switch가 같은 집합을 봐야 함
     // 샹후 방어대응가능 스킬(도발 등) 추가 시 이 메서드와 아래 switch만 함께 확장

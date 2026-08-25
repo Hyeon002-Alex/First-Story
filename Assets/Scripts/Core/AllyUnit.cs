@@ -17,6 +17,7 @@ public sealed class AllyUnit : BattleUnit
     public string UnitId => _data.UnitId;
     public string DisplayName => _data.DisplayName;
     public IReadOnlyList<SkillData> EquippedSkills => _data.EquippedSkills;
+    public SkillData UniqueAction => _data.UniqueAction;
 
     // 아군 방향방어 = 능동. 불일치 시 0.75 보상
     protected override bool StanceIsActive => true;
