@@ -81,6 +81,43 @@ public sealed class IntentSystem
     // 정보확인(Reveal) 실행 시 켬. 데이터는 안 바뀌고 공개 수준만 오름
     public void SetRevealed(EnemyUnit enemy) => _revealed.Add(enemy);
 
+    // === 공격자 역참조 조회 === //
+    // 이 아군을 노리는, 살아있고 정보확인된 적 목록. 방어위상 예상피해 전용
+    // 미확인 적은 제외 -> 정보확인이 대응을 실질적으로 바꾼다는 정체성 반영
+    // 순서 = enemies 인자 순
+    public IReadOnlyList<EnemyUnit> GetAttackers(AllyUnit ally, IReadOnlyList<EnemyUnit> enemies)
+    {
+        if (ally == null)
+            throw new ArgumentNullException(nameof(ally));
+        if (enemies == null)
+            throw new ArgumentNullException(nameof(enemies));
+
+        var result = new List<EnemyUnit>();
+        foreach (EnemyUnit enemy in enemies)
+        {
+            if (enemy.IsIncapacitated)
+                continue;
+            if (!IsRevealed(enemy))
+                continue;
+
+            EnemyIntent intent = GetIntent(enemy);
+            if (intent == null || intent.Target == null)
+                continue;   // 미등록 또는 대상 미확정
+
+            // Area는 대표자와 같은 진영 전원이 맞음. 적 스킬의 대표 대상은 항상 아군 특이라
+            // -> 대표자가 AllyUnit이면 어느 아군이든 포함
+            // Single/FixedTarget/Self는 대상이 정확히 이 아군일 때만
+            bool hits = intent.Skill.TargetRule == TargetRule.Area
+                ? intent.Target is AllyUnit
+                : ReferenceEquals(intent.Target, ally);
+
+            if (hits)
+                result.Add(enemy);
+        }
+
+        return result;
+    }
+
     // === 붕괴 행동취소 === //
     // intent 제거가 아닌 무효 표시. UI 취소 연출이 원본 intent를 읽어야 하므로 보존
     public void Cancel(EnemyUnit enemy)
