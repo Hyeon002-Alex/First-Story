@@ -185,12 +185,14 @@ public static class MProbe
 
         AllyChoices withIntent = ChoiceQuerySystem.GetChoices(defAlly, InputPhase.Defense, snap4, m4Intent);
         ActionChoice highOffer = withIntent.Choices.First(c => c.Kind == ActionKind.Defense && c.Direction == AttackDirection.High);
-        Check("M-4a intentSystem 제공 시 방향방어 오퍼에 PreviewDamages 부착(1명)",
-            highOffer.PreviewDamages.Count == 1 && highOffer.PreviewDamages.ContainsKey(attacker4));
+        Check("M-4a intentSystem 제공 시 방향방어 오퍼에 IncomingPreviewDamages 부착(1명)",
+            highOffer.IncomingPreviewDamages.Count == 1 && highOffer.IncomingPreviewDamages.ContainsKey(attacker4));
+        Check("M-4a Defense 오퍼의 PreviewDamages(대상별)는 항상 빈 목록(필드 분리 확인)",
+            highOffer.PreviewDamages.Count == 0);
 
         AllyChoices noIntent = ChoiceQuerySystem.GetChoices(defAlly, InputPhase.Defense, snap4);   // intentSystem 생략(K/L 구 호출부)
         ActionChoice highOfferNoIntent = noIntent.Choices.First(c => c.Kind == ActionKind.Defense && c.Direction == AttackDirection.High);
-        Check("M-4b intentSystem 미제공 시 PreviewDamages 빈 목록(K/L 회귀 보존)", highOfferNoIntent.PreviewDamages.Count == 0);
+        Check("M-4b intentSystem 미제공 시 IncomingPreviewDamages 빈 목록(K/L 회귀 보존)", highOfferNoIntent.IncomingPreviewDamages.Count == 0);
 
         var poorAlly = Ally("Poor", 0);
         var snapPoor = new BattleSnapshot(1, new List<AllyUnit> { poorAlly }, new List<EnemyUnit> { attacker4 });
@@ -199,7 +201,7 @@ public static class MProbe
             !poorChoices.Choices.Any(c => c.Kind == ActionKind.Defense));
 
         ActionChoice directOffer = ActionChoice.Defense(AttackDirection.Low, 1);
-        Check("M-4d ActionChoice.Defense 2-인자 호출 여전히 동작(NoPreview)", directOffer.PreviewDamages.Count == 0);
+        Check("M-4d ActionChoice.Defense 2-인자 호출 여전히 동작(NoPreview)", directOffer.IncomingPreviewDamages.Count == 0);
 
         Console.WriteLine();
         Console.WriteLine($"=== M 프로브 결과: PASS {_pass} / FAIL {_fail} ===");
