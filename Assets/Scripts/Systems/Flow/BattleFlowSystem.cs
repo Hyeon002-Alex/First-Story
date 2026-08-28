@@ -100,10 +100,10 @@ public sealed class BattleFlowSystem
     }
 
     // 3. 적 intent 결정. 실제 AI: 각 적 behavior.Decide -> IntentSystem 등록
-    // ClearAll은 여기서(턴 경계 초기화 = 턴 루프 소유). 결정·등록은 EnemyBehaviorSystem
+    // 턴 경계 초기화 = 턴 루프 소유. ClearTurn()만
     private void Step3_AssignEnemyIntent()
     {
-        _intentSystem.ClearAll();
+        _intentSystem.ClearTurn();
 
         // 스냅샷 = 생존 필터 완료본(계약). LivingAllies = 공격 대상 후보(플레이어측),
         // LivingEnemies = 결정 주체 진영(적측, SurvivingAllyAtLeast 조건이 봄)
@@ -335,6 +335,7 @@ public sealed class BattleFlowSystem
             if (_waveSystem.HasNextWave)
             {
                 _waveSystem.AdvanceToNextWave();    // 전투는 계속
+                _intentSystem.ClearRevealed();      // 정보확인 지속 정책: 웨이브 경계에서 리셋
                 return BattleOutcome.Ongoing;
             }
             Debug.Log("[9 판정] 마지막 웨이브 적 전멸 -> 승리");

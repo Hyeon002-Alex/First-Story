@@ -25,11 +25,28 @@ public sealed class IntentSystem
     }
 
     // 턴 종료, 웨이브 전환 시 전부 비움. 플래그도 함께 초기화
+    // 외부의 전체 리셋용으로 유지. BattleFlowSystem은 더 이상 이걸 턴 경계에 안 씀
+    // -> ClearTurn/ClearRevealed로 분리
     public void ClearAll()
     { 
         _intents.Clear();
         _revealed.Clear();
         _cancelled.Clear();
+    }
+
+    // 턴 경계 초기화: intent/붕괴취소만. revealed는 유지(정보확인은 웨이브 단위로 지속)
+    public void ClearTurn()
+    {
+        _intents.Clear();
+        _cancelled.Clear();
+    }
+
+    // 웨이브 경계 초기화: revealed만. 새 웨이브 적은 어차피 새 EnemyUnit 인스턴스라
+    // 이 호출 없이도 사실상 무관하지만, 다음 웨이브에서 남아있는 아군 관점 정보를
+    // 이월시키지 않는다는 정책을 명시적으로 못박기 위해 별도 유지
+    public void ClearRevealed()
+    {
+        _revealed.Clear();
     }
 
     // === 조회 === //
