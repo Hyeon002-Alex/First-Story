@@ -85,6 +85,9 @@ public static class ChoiceQuerySystem
 
     // 속도순 행동: 고유행동(공격형)/편성스킬 3개. 아이템은 아직 미구현, 차례종료는 공통 경로
     // 대상 진영은 skill.TargetSide로 풀을 고르고 GetValidTargets로 규칙 전용
+    // 공격 오퍼 무방어 예상피해(PreviewFor)까지 이 통로에서 부착 완료
+    // 아직 밖에 있는 것: 방어대응가능 스킬의 여기 노출 여부
+    // -> 자격 플래그 미정, 데이터 미입력으로 대응
     private static List<ActionChoice> ActionChoices(AllyUnit ally, BattleSnapshot snapshot)
     {
         var list = new List<ActionChoice>();
@@ -122,11 +125,13 @@ public static class ChoiceQuerySystem
             : ActionChoice.EquippedSkill(skill, skill.ApCost, targets, preview));
     }
 
+    // 무방어 예상피해. ActionResolver.HasDamage/PreviewDamage 재사용
+    // 피해 없는 스킬은 null 반환 -> ActionChoice 생성자가 NoPreview로 대체
     private static IReadOnlyDictionary<BattleUnit, DamageResult> PreviewFor(
         AllyUnit actor, SkillData skill, IReadOnlyList<BattleUnit> targets)
     {
         if (!ActionResolver.HasDamage(skill))
-            return EmptyPreview;
+            return null;
 
         var preview = new Dictionary<BattleUnit, DamageResult>();
         foreach (BattleUnit target in targets)
@@ -134,12 +139,10 @@ public static class ChoiceQuerySystem
         return preview;
     }
 
-    private static readonly IReadOnlyDictionary<BattleUnit, DamageResult> EmptyPreview
-        = new Dictionary<BattleUnit, DamageResult>();
-
     // === 대상 규칙 해소 === //
     // 규칙별 지정대상 후보 산출. pool = 겨냥 진영의 생존 유닛(호출자가 진영 결정해 주입)
-    // 진영 지식을 이 함수 밖에 둠: target-side가 데이터에 없어 진영은 호출 맥락이 앎(보호=아군, 정보확인=적)
+    // 진영 지식을 이 함수 밖에 둠: 이 함수는 대상 "형태(TargetRule)"만 책임지고
+    // -> 진영 해성은 SidePool의 관심사로 분리
     // 보호 리다이렉트는 실행(TargetingSystem) 소관 -> 오퍼는 리다이렉트 전 원 후보를 냄
     public static IReadOnlyList<BattleUnit> GetValidTargets(
         BattleUnit actor, TargetRule rule, IReadOnlyList<BattleUnit> pool)

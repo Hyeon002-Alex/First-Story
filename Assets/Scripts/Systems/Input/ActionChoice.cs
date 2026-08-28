@@ -30,7 +30,7 @@ public sealed class ActionChoice
         Direction = direction;
         ApCost = apCost;
         ValidTargets = validTargets;
-        PreviewDamages = previewDamages;
+        PreviewDamages = previewDamages ?? NoPreview;   // 빈 프리뷰의 단일 소유 지점. 팩토리들은 여기 위임
     }
 
     // 방향방어 1방향. 대상 없음
@@ -61,7 +61,7 @@ public sealed class ActionChoice
         IReadOnlyDictionary<BattleUnit, DamageResult> previewDamages)
          => new ActionChoice(
             ActionKind.UniqueAction, skill ?? throw new ArgumentNullException(nameof(skill)),
-            AttackDirection.None, apCost, RequireTargets(targets), previewDamages ?? NoPreview);
+            AttackDirection.None, apCost, RequireTargets(targets), previewDamages);
 
     // 편성 스킬 1개. 대상 후보는 스킬의 TargetRule/TargetSide 해석 결과
     public static ActionChoice EquippedSkill(
@@ -69,7 +69,7 @@ public sealed class ActionChoice
         IReadOnlyDictionary<BattleUnit, DamageResult> previewDamages)
         => new ActionChoice(
             ActionKind.Skill, skill ?? throw new ArgumentNullException(nameof(skill)),
-            AttackDirection.None, apCost, RequireTargets(targets), previewDamages ?? NoPreview);
+            AttackDirection.None, apCost, RequireTargets(targets), previewDamages);
 
     // 차례종료(포기). 전 위상 공통. 대상 없음, 비용 0
     public static ActionChoice EndTurn()
