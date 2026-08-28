@@ -29,9 +29,8 @@ public sealed class SkillData : ScriptableObject
     [SerializeField] private List<StatusEffectData> _effects = new List<StatusEffectData>();   // 부여할 상태이상 Id
     [SerializeField] private bool _cleansesNormalStatus;    // 일반 상태이상 정화 여부. 부여의 반대 동작
 
-    // 정보 확인 속성
     [SerializeField] private bool _isUnavoidable;       // 회피불가
-
+    [SerializeField] private bool _isChallenge;         // 도전류: 실행해도 즉시 피해 없음, 다음 글로벌 턴 대상강제 예약
     [SerializeField] private bool _isInfoAction;        // 정보형 고유행동 자격
 
     public string SkillId => _skillId;
@@ -50,5 +49,6 @@ public sealed class SkillData : ScriptableObject
     public IReadOnlyList<StatusEffectData> Effects => _effects;  // 읽기전용 목록 -> 밖에서 Add/Remove 못 함
     public bool CleansesNormalStatus => _cleansesNormalStatus;
     public bool IsUnavoidable => _isUnavoidable;
+    public bool IsChallenge => _isChallenge;
     public bool IsInfoAction => _isInfoAction;
 }

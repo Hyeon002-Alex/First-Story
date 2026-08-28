@@ -72,11 +72,12 @@ public static class BattleBootstrapper
         // 5. 시스템 배선
         IntentSystem intent = new IntentSystem();
         ProtectionSystem protection = new ProtectionSystem();
+        ChallengeSystem challenge = new ChallengeSystem();
         WaveSystem waveSystem = new WaveSystem(activeEnemies, waves, allies, protection);
         IActionExecutor executor = new ActionResolver(allies, activeEnemies, protection, intent);
         EnemyBehaviorSystem behavior = new EnemyBehaviorSystem(registry, intent);
         BattleFlowSystem flow = new BattleFlowSystem(
-            allies, activeEnemies, intent, protection, executor, waveSystem, behavior);
+            allies, activeEnemies, intent, protection, challenge, executor, waveSystem, behavior);
 
         Debug.Log($"[조립 완료] {encounter.EncounterId}: 아군 {allies.Count} / 웨이브 {waves.Count} / 패턴 {registry.Count}");
         return new BattleContext(flow, allies, activeEnemies, waveSystem);

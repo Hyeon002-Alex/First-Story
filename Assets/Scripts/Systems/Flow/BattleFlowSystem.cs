@@ -11,6 +11,7 @@ public sealed class BattleFlowSystem
     private readonly List<EnemyUnit> _enemies;           // 웨이브 전환 시 WaveSystem이 내용 교체. 참조는 불변
     private readonly IntentSystem _intentSystem;
     private readonly ProtectionSystem _protection;       // 6단계 선언, 8단계 소거. ActionResolver와 같은 인스턴스
+    private readonly ChallengeSystem _challenge;         // 3단계 intent 결정 직후 적용
     private readonly IActionExecutor _executor;          // 실행 구멍
     private readonly WaveSystem _waveSystem;             // 9단계 웨이브 전환 판정에서 호출
     private readonly EnemyBehaviorSystem _behaviorSystem;   // 3단계 적 intent 결정. 더미 대체(G-3)
@@ -27,6 +28,7 @@ public sealed class BattleFlowSystem
         List<EnemyUnit> enemies,
         IntentSystem intentSystem,
         ProtectionSystem protection,
+        ChallengeSystem challenge,
         IActionExecutor executor,
         WaveSystem waveSystem,
         EnemyBehaviorSystem behaviorSystem)
@@ -35,6 +37,7 @@ public sealed class BattleFlowSystem
         _enemies = enemies ?? throw new ArgumentNullException(nameof(enemies));
         _intentSystem = intentSystem ?? throw new ArgumentNullException(nameof(intentSystem));
         _protection = protection ?? throw new ArgumentNullException(nameof(protection));
+        _challenge = challenge ?? throw new ArgumentNullException(nameof(challenge));
         _executor = executor ?? throw new ArgumentNullException(nameof(executor));
         _waveSystem = waveSystem ?? throw new ArgumentNullException(nameof(waveSystem));
         _behaviorSystem = behaviorSystem ?? throw new ArgumentNullException(nameof(behaviorSystem));
@@ -110,6 +113,10 @@ public sealed class BattleFlowSystem
             _enemies.Where(e => !e.IsIncapacitated).ToList());
 
         _behaviorSystem.DecideAll(snapshot);
+
+        // 도전 예약 적용. Step4 고개 전에 상제 대상을 intent에 반영해야
+        // -> UI가 처음부터 강제 대상을 보여줌
+        _challenge.ApplyReservations(_intentSystem, _turnNum);
     }
 
     // 4. 공개. reveal 게이트된 IntentView를 소비해 공개 수준별로 로그
@@ -156,12 +163,17 @@ public sealed class BattleFlowSystem
                 continue;   // 드라이버 무응답 방어. 정상 펌프는 항상 채움
 
             ActionCommand response = req.Response;
-            // 정보형 고유행동만 적용. 집합 판정은 InfoResponseSystem 단일 소유
             if (InfoResponseSystem.IsInfoResponse(response))
             {
-                // 검증 + 공개/AP/행동소진 적용. 성공 시에만 실행(공격 겸용)
-                if (InfoResponseSystem.TryApply(response, _intentSystem))
+                // 순서 확정: reveal -> 피해/붕괴 -> AP소모 -> acted
+                // executor가 예외로 중단되면 AP/acted는 저절로 미확정 상태로 남음
+                if (InfoResponseSystem.TryValidate(response, out AllyUnit ally, out EnemyUnit enemy, out int apCost))
+                {
+                    _intentSystem.SetRevealed(enemy);
                     _executor.Execute(response, _turnNum);
+                    APSystem.Consume(ally, apCost);
+                    ally.SetActed(true);
+                }
             }
         }
     }
@@ -191,6 +203,11 @@ public sealed class BattleFlowSystem
         }
     }
 
+    // 이 종류가 Action 위상 AP 소모 대상인가. 비정보형 고유행동/장착스킬만. 차례종료 제외
+    // 아이템은 현재 미구현이라 포함 안 함
+    private static bool ConsumesActionAp(ActionKind kind)
+        => kind == ActionKind.UniqueAction || kind == ActionKind.Skill;
+
     // 7. 속도순 실행. 정렬 1회 + 순서고정, 유효성 재검사
     // void -> IEnumerator: 아군 차례에 행동 요청을 yield -> 드라이버 응답을 진행
     // 적 차례는 intent에서 명령을 즉시 만들어 왕복 없이 실행
@@ -218,6 +235,13 @@ public sealed class BattleFlowSystem
                 if (!req.IsAnswered)
                     continue;       // 무응답 방어. 정상 펌프는 항상 채움
                 command = req.Response;
+
+                // Action 위상 AP 최종 확인만 여기서. 소모는 실행 후로 미룸
+                if (ConsumesActionAp(command.Kind) && !APSystem.CanAfford(ally, command.Skill.ApCost))
+                { 
+                    Debug.Log($"[7 거부] {UnitId(ally)} AP 부족 ({ally.CurrAP}/{command.Skill.ApCost}) - 실행 취소");
+                    continue;
+                }
             }
             else
             { 
@@ -228,7 +252,20 @@ public sealed class BattleFlowSystem
             }
 
             _executor.Execute(command, _turnNum);
+
+            // AP 소모는 실행 후
+            if (actor is AllyUnit apActor && ConsumesActionAp(command.Kind))
+                APSystem.Consume(apActor, command.Skill.ApCost);
+
             actor.SetActed(true);
+
+            // 도전 예약 등록(사후 수정). 도전은 피해 0이라 Execute는 no-op -> 여기가 실제 효과 지점
+            if (actor is AllyUnit challengeCaster
+                && ChallengeSystem.IsChallengeSkill(command.Skill)
+                && command.Target is EnemyUnit challengeTarget)
+            {
+                _challenge.Register(challengeCaster, challengeTarget, _turnNum);
+            }
 
             // 실행후 사망, 붕괴 반영은 다음 순번 재검사가 자동 처리
         }
