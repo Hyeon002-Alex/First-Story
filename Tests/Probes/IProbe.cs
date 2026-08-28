@@ -67,18 +67,19 @@ public static class IProbe
         return new EnemyUnit(d);
     }
     // BattleBootstrapper.Build 레시피 재현 (빈 registry → 적 무행동)
-    static (BattleContext ctx, BattleFlowSystem flow) Build(List<AllyUnit> allies, List<EnemyUnit> wave0)
-    {
-        var active = new List<EnemyUnit>(wave0);
-        var waves = new List<IReadOnlyList<EnemyUnit>> { wave0 };
-        var intent = new IntentSystem();
-        var prot = new ProtectionSystem();
-        var waveSys = new WaveSystem(active, waves, allies, prot);
-        IActionExecutor exec = new ActionResolver(allies, active, prot, intent);
-        var behavior = new EnemyBehaviorSystem(new Dictionary<string, BehaviorPatternData>(), intent);
-        var flow = new BattleFlowSystem(allies, active, intent, prot, exec, waveSys, behavior);
-        return (new BattleContext(flow, allies, active, waveSys), flow);
-    }
+static (BattleContext ctx, BattleFlowSystem flow) Build(List<AllyUnit> allies, List<EnemyUnit> wave0)
+{
+    var active = new List<EnemyUnit>(wave0);
+    var waves = new List<IReadOnlyList<EnemyUnit>> { wave0 };
+    var intent = new IntentSystem();
+    var prot = new ProtectionSystem();
+    var challenge = new ChallengeSystem();
+    var waveSys = new WaveSystem(active, waves, allies, prot);
+    IActionExecutor exec = new ActionResolver(allies, active, prot, intent);
+    var behavior = new EnemyBehaviorSystem(new Dictionary<string, BehaviorPatternData>(), intent);
+    var flow = new BattleFlowSystem(allies, active, intent, prot, challenge, exec, waveSys, behavior);
+    return (new BattleContext(flow, allies, active, waveSys), flow);
+}
 
     public static int Main()
     {
@@ -148,6 +149,7 @@ public static class IProbe
         Set(flow4, "_enemies", new List<EnemyUnit>());
         Set(flow4, "_intentSystem", new IntentSystem());
         Set(flow4, "_protection", new ProtectionSystem());
+        Set(flow4, "_challenge", new ChallengeSystem());
         Set(flow4, "_executor", new NoopExecutor());
 
         var def6 = new List<InputRequest>();
