@@ -8,7 +8,10 @@ using System.Linq;
 public static class ChoiceQuerySystem
 {
     // 아군 1명의 이번 위상 선택지. snapshot = 생존 필터 완료본(계약)
-    public static AllyChoices GetChoices(AllyUnit ally, InputPhase phase, BattleSnapshot snapshot)
+    // intentSystem = 방어위상 예상피해(M) 산출에 필요. Info/Action 위상은 안 씀, 옵션(기본 null)
+    // -> null이면 DefenseChoices가 프리뷰 없이 산출(K/L 기존 호출부 무변경 보존)
+    public static AllyChoices GetChoices(
+        AllyUnit ally, InputPhase phase, BattleSnapshot snapshot, IntentSystem intentSystem = null)
     {
         List<ActionChoice> choices;
         switch (phase)
@@ -17,7 +20,7 @@ public static class ChoiceQuerySystem
                 choices = InfoChoices(ally, snapshot);
                 break;
             case InputPhase.Defense:
-                choices = DefenseChoices(ally, snapshot);
+                choices = DefenseChoices(ally, snapshot, intentSystem);
                 break;
             case InputPhase.Action:
                 choices = ActionChoices(ally, snapshot);
@@ -55,19 +58,24 @@ public static class ChoiceQuerySystem
     }
 
     // 방어 대응: 방향방어 3방향 + 보호. AP 게이팅. 대응 AP는 ResponsePhaseSystem 단일 소유를 읽음
-    private static List<ActionChoice> DefenseChoices(AllyUnit ally, BattleSnapshot snapshot)
+    // 방향방어 오퍼에는 방어위상 예상피해(M) 부착: 이 방향을 고르면 공격자별로 얼마나 맞는지
+    // intentSystem == null이면 프리뷰 생략(K/L 기존 호출부 호환). 실사용(Step6 배선)은 UI 대주제에서 항상 넘길 것
+    private static List<ActionChoice> DefenseChoices(AllyUnit ally, BattleSnapshot snapshot, IntentSystem intentSystem)
     {
         var list = new List<ActionChoice>();
 
         int defenseCost = ResponsePhaseSystem.DefenseAPCost;
         int protectionCost = ResponsePhaseSystem.ProtectionAPCost;
 
-        // 방향방어: 상/중/하 각각 하나의 오퍼. 대상 없음
+        // 방향방어: 상/중/하 각각 하나의 오퍼. 대상 없음, 프리뷰는 방향별 공격자-피해 매핑
         if (APSystem.CanAfford(ally, defenseCost))
         {
-            list.Add(ActionChoice.Defense(AttackDirection.High, defenseCost));
-            list.Add(ActionChoice.Defense(AttackDirection.Mid, defenseCost));
-            list.Add(ActionChoice.Defense(AttackDirection.Low, defenseCost));
+            list.Add(ActionChoice.Defense(AttackDirection.High, defenseCost,
+                DefensePreviewFor(ally, AttackDirection.High, intentSystem, snapshot)));
+            list.Add(ActionChoice.Defense(AttackDirection.Mid, defenseCost,
+                DefensePreviewFor(ally, AttackDirection.Mid, intentSystem, snapshot)));
+            list.Add(ActionChoice.Defense(AttackDirection.Low, defenseCost,
+                DefensePreviewFor(ally, AttackDirection.Low, intentSystem, snapshot)));
         }
 
         // 보호: 대상 = 생존 아군 중 자기 제외. 후보 0이면 오퍼 생략(자기보호 금지)
@@ -81,6 +89,27 @@ public static class ChoiceQuerySystem
         // 방어대응가능 자격 플래그 확정 후 수렴
         // 도발류는 SkillData 자격 플래그가 아직 없어 보류
         return list;
+    }
+
+    // 방향방어 예상피해(M) 부착. intentSystem == null(K/L 구 호출부) 또는 공격자 0명이면 null -> NoPreview로 자연 대체
+    // DefensePreviewSystem은 EnemyUnit 키 반환(공격자만 있어 더 정밀) -> ActionChoice.PreviewDamages의
+    // BattleUnit 키(스킬 오퍼 프리뷰와 형태 통일)로 여기서 변환. 변환 책임을 소비처(여기)에 둬 M-3을 안 건드림
+    private static IReadOnlyDictionary<BattleUnit, DamageResult> DefensePreviewFor(
+        AllyUnit ally, AttackDirection direction, IntentSystem intentSystem, BattleSnapshot snapshot)
+    {
+        if (intentSystem == null)
+            return null;
+
+        IReadOnlyDictionary<EnemyUnit, DamageResult> byEnemy =
+            DefensePreviewSystem.Preview(ally, direction, intentSystem, snapshot.LivingEnemies);
+
+        if (byEnemy.Count == 0)
+            return null;
+
+        var byUnit = new Dictionary<BattleUnit, DamageResult>();
+        foreach (KeyValuePair<EnemyUnit, DamageResult> pair in byEnemy)
+            byUnit[pair.Key] = pair.Value;
+        return byUnit;
     }
 
     // 속도순 행동: 고유행동(공격형)/편성스킬 3개. 아이템은 아직 미구현, 차례종료는 공통 경로

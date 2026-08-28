@@ -34,12 +34,16 @@ public sealed class ActionChoice
     }
 
     // 방향방어 1방향. 대상 없음
-    public static ActionChoice Defense(AttackDirection direction, int apCost)
+    // previewDamages: 이 방향을 고르면 각 공격자(EnemyUnit, BattleUnit으로 저장)에게 받을 예상피해(M)
+    // 미확인 공격자 게이팅은 호출부(DefensePreviewSystem 경유) 책임 -> 여기선 안 가림. null이면 NoPreview
+    public static ActionChoice Defense(
+        AttackDirection direction, int apCost,
+        IReadOnlyDictionary<BattleUnit, DamageResult> previewDamages = null)
     {
         if (direction == AttackDirection.None)
             throw new ArgumentException("방향방어는 High/Mid/Low만", nameof(direction));
         return new ActionChoice(
-            ActionKind.Defense, null, direction, apCost, Array.Empty<BattleUnit>(), NoPreview);
+            ActionKind.Defense, null, direction, apCost, Array.Empty<BattleUnit>(), previewDamages);
     }
 
     // 보호. 대상 = 지킬 아군 후보
