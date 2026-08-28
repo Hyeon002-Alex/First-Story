@@ -132,10 +132,12 @@ public sealed class ActionResolver : IActionExecutor
     // === 피해 계산 단일 경로 === //
     // 미리보기와 실제가 똑같이 이걸 호출
     // ChoiceQuerySystem 처럼 ActionResolver 인스턴스가 없는 순수 조회 쪽에서도 호출해야 하기 때문에 static
-    private static DamageResult ComputeDamage(BattleUnit actor, BattleUnit target, SkillData skill)
+    // stance = 방향 판정에 쓸 자세. 실행/기본 프리뷰는 대상의 실제 확정 자세를,
+    // -> 방어위상 프리뷰는 아직 미확정인 가상 자세를 넘김
+    private static DamageResult ComputeDamage(BattleUnit actor, BattleUnit target, SkillData skill, DefenseStance stance)
     {
-        // 6. 방향 배율: 대상의 실제 방어 자세 조회. 자세 없으면 None -> 1.00
-        float directionMod = DirectionSystem.GetMod(skill.Direction, target.GetDefenseStance());
+        // 6. 방향 배율: 대상의 실제 방어 자세 조회. 실제/가상 구분은 호출자 책임
+        float directionMod = DirectionSystem.GetMod(skill.Direction, stance);
         // 붕괴 받는 피해 증가: 대상이 이미 붕괴/균열 상태면 1.50
         float breakMod = BreakCrackSystem.GetDamageMod(target);
         // 상태이상 받는피해증가
@@ -146,6 +148,11 @@ public sealed class ActionResolver : IActionExecutor
             actor.EffectiveAttack, skill.DamageCoeffi, skill.FixedDamage,
             target.EffectiveDefense, directionMod, breakMod, receivedDamageMod);
     }
+
+    // 기존 시그니처 유지: 대상의 실제 확정 자세를 그대로 읽어 4인자 버전에 위임
+    // 실행파이프(ResolverPerTaret)과 무자세 오버라이드 프리뷰가 이 통로를 씀
+    private static DamageResult ComputeDamage(BattleUnit actor, BattleUnit target, SkillData skill)
+        => ComputeDamage(actor, target, skill, target.GetDefenseStance());
 
     // 미리보기: 실제와 동일 계산. 적용만 안함. UI 예상피해 표시가 이걸 호출
     public static DamageResult PreviewDamage(BattleUnit actor, BattleUnit target, SkillData skill)
@@ -158,6 +165,20 @@ public sealed class ActionResolver : IActionExecutor
             throw new ArgumentNullException(nameof(skill));
 
         return ComputeDamage(actor, target, skill);
+    }
+
+    // 미리보기(가상 자세): 대상이 아직 고르지 않은 가상 자세를 가정해 계산. 적용 안 함
+    // 방어위상 예상피해 전용 통로 -> target.GetDefenseStance() 대신 stance를 그대로 씀
+    public static DamageResult PreviewDamage(BattleUnit actor, BattleUnit target, SkillData skill, DefenseStance stance)
+    {
+        if (actor == null)
+            throw new ArgumentNullException(nameof(actor));
+        if (target == null)
+            throw new ArgumentNullException(nameof(target));
+        if (skill == null)
+            throw new ArgumentNullException(nameof(skill));
+
+        return ComputeDamage(actor, target, skill, stance);
     }
 
     // === wide SkillData 효과 유무(구조 부채: 한 스킬이 피해/회복/보호막 복수 보유 가능) === //

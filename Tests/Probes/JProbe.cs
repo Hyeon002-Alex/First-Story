@@ -76,6 +76,9 @@ public static class JProbe
        // === J-2: TryValidate 정상 — 순수 검증, 상태 미변경 (5) ===
 // 사후-2: InfoResponseSystem은 이제 IntentSystem을 참조하지 않음(순수 검증으로 축소).
 // reveal/AP/acted 상태 변경 검증은 그 오케스트레이션을 소유하는 Step5_InfoResponse(J-3 섹션)에서 확인.
+var ally = Ally("A", 5);
+var enemy = Enemy("E");
+var infoCmd = ActionCommand.CreateUnique(ally, Skill("i1", 2, true), enemy);
 int apBeforeValidate = ally.CurrAP;
 bool r = InfoResponseSystem.TryValidate(infoCmd, out AllyUnit vAlly, out EnemyUnit vEnemy, out int vApCost);
 Check("J-2 TryValidate 반환 true", r);
