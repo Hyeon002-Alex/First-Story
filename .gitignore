@@ -109,3 +109,5 @@ InitTestScene*.unity*
 # 임시 프로브 (커밋 제외)
 /Assets/Scripts/_Scratch/
 /Assets/Scripts/_Scratch.meta
+
+.claude/settings.local.json
