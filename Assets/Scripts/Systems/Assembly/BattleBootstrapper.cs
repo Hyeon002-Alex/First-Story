@@ -80,6 +80,6 @@ public static class BattleBootstrapper
             allies, activeEnemies, intent, protection, challenge, executor, waveSystem, behavior);
 
         Debug.Log($"[조립 완료] {encounter.EncounterId}: 아군 {allies.Count} / 웨이브 {waves.Count} / 패턴 {registry.Count}");
-        return new BattleContext(flow, allies, activeEnemies, waveSystem);
+        return new BattleContext(flow, allies, activeEnemies, waveSystem, intent);
     }
 }

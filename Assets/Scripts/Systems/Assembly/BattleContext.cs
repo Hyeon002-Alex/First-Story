@@ -7,17 +7,20 @@ using System.Collections.Generic;
 public sealed class BattleContext
 {
     private readonly WaveSystem _waves;     // 조회 위임용 내부 보관. AdvanceToNextWave 등 뮤테이터는 감춤
+    private readonly IntentSystem _intents; // 적 의도 조회 위임용. SetIntent 등 뮤테이터는 UI에 안 넘김
 
     public BattleContext(
         BattleFlowSystem flow,
         IReadOnlyList<AllyUnit> allies,
         IReadOnlyList<EnemyUnit> activeEnemies,
-        WaveSystem waves)
+        WaveSystem waves,
+        IntentSystem intents = null)    // 선택적: UI 조회용. 프로브는 4인자 호출 그대로 유지
     { 
         Flow = flow ?? throw new ArgumentNullException(nameof(flow));
         Allies = allies ?? throw new ArgumentNullException(nameof(allies));
         ActiveEnemies = activeEnemies ?? throw new ArgumentNullException(nameof(activeEnemies));
         _waves = waves ?? throw new ArgumentNullException(nameof(waves));
+        _intents = intents;   // null 허용. Intents 접근 시 그대로 null 반환. 조회 소비처가 프리뷰 없이 동작
     }
 
     public BattleFlowSystem Flow { get; }
@@ -25,6 +28,9 @@ public sealed class BattleContext
     public IReadOnlyList<EnemyUnit> ActiveEnemies { get; }   // 현재 웨이브. WaveSystem이 내용 교체하는 공유 리스트의 읽기 뷰
     public int CurrentWaveIndex => _waves.CurrentWaveIndex;  // 조회 전용 위임. WaveSystem 자체는 비노출
     public bool HasNextWave => _waves.HasNextWave;
+    // 적 의도 조회 전용. intent 등록/공개는 BattleFlowSystem 소유. 여긴 읽기 목적만
+    // ChoiceQuerySystem.GetChoices와 IntentSystem.GetView가 구체 타입을 요구해 인스턴스를 그대로 노출
+    public IntentSystem Intents => _intents;
 
     // === 헤드리스/테스트 전용 동기 구동 === //
     // 코루틴 펌프를 커밋 API로 노출. 전투를 승패까지 완주시키고 결과 반환
